@@ -30,7 +30,7 @@
 
         <!-- Toolbar -->
         <div class="space-y-3">
-            <!-- Search input (full width, matches Annual Volume) -->
+            <!-- Search input -->
             <div class="bg-white border border-ink-200 rounded-xl p-3">
                 <div class="relative">
                     <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-ink-300 text-xs"></i>
@@ -39,15 +39,16 @@
                 </div>
             </div>
 
-            <!-- Filter row: compact dropdown + entry count pill -->
+            <!-- Filter row: status dropdown matching data statuses -->
             <div class="flex flex-wrap items-center gap-2">
                 <select id="directory-status-filter" onchange="filterDirectoryTable()"
                     class="input-field !w-auto text-xs font-semibold pr-8">
                     <option value="">All Statuses</option>
+                    <option value="Low Volume">Low Volume</option>
+                    <option value="Low Production">Low Production</option>
+                    <option value="No Production">No Production</option>
                     <option value="Active">Active</option>
-                    <option value="Renewal in process">Renewal in Process</option>
-                    <option value="Permit for release">Permit for Release</option>
-                    <option value="Expired">Expired</option>
+                    <option value="Consumed">Consumed</option>
                 </select>
 
                 <div class="flex items-center px-3 h-10 text-[11px] font-semibold text-ink-500 bg-white rounded-lg border border-ink-200">
@@ -167,10 +168,11 @@
                     <div>
                         <label class="block text-[11px] font-bold text-ink-600 mb-1">Permit Status</label>
                         <select id="new-status" class="input-field">
+                            <option value="Low Volume">Low Volume</option>
+                            <option value="Low Production">Low Production</option>
+                            <option value="No Production">No Production</option>
                             <option value="Active">Active</option>
-                            <option value="Renewal in process">Renewal in Process</option>
-                            <option value="Permit for release">Permit for Release</option>
-                            <option value="Expired">Expired</option>
+                            <option value="Consumed">Consumed</option>
                         </select>
                     </div>
                 </div>

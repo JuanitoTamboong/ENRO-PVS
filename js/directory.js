@@ -52,14 +52,20 @@ function renderDirectoryTable(data) {
 
 function filterDirectoryTable() {
     const q = document.getElementById('directory-search-input').value.toLowerCase();
-    const s = document.getElementById('directory-status-filter').value;
+    const selectedStatus = document.getElementById('directory-status-filter').value;
 
-    const filtered = permitteesData.filter(p =>
-        (p.name.toLowerCase().includes(q) ||
-         p.permitNo.toLowerCase().includes(q) ||
-         p.location.toLowerCase().includes(q)) &&
-        (s === "" || p.status === s)
-    );
+    const filtered = permitteesData.filter(p => {
+        const matchesSearch = 
+            p.name.toLowerCase().includes(q) ||
+            p.permitNo.toLowerCase().includes(q) ||
+            p.location.toLowerCase().includes(q);
+
+        const statusInfo = getStatusInfo(p);
+        const matchesStatus = (selectedStatus === "" || statusInfo.label === selectedStatus);
+
+        return matchesSearch && matchesStatus;
+    });
+
     renderDirectoryTable(filtered);
 }
 
@@ -67,6 +73,7 @@ function filterDirectoryTable() {
 function openAddEntryModal() {
     document.getElementById('modal-add-entry').classList.add('active');
 }
+
 function closeAddEntryModal() {
     document.getElementById('modal-add-entry').classList.remove('active');
 }
