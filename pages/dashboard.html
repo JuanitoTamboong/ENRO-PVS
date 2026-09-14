@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ENRO • Dashboard</title>
+    <!-- Adjusted paths to go up one level to root -->
+    <link rel="stylesheet" href="../css/tailwind.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body class="h-full bg-ink-50 font-sans text-ink-800">
+
+<!-- Shared header injected by JS -->
+<div id="app-header"></div>
+
+<main class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div class="space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+            <div>
+                <h1 class="text-xl font-bold text-ink-900">Dashboard</h1>
+                <p class="text-xs text-ink-500 mt-0.5">Overview of permit records and extraction volume</p>
+            </div>
+            <div class="text-[11px] text-ink-400 font-mono">
+                <i class="fa-regular fa-calendar mr-1"></i><span id="hub-date"></span>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="metric-card">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-[10px] font-bold text-ink-400 uppercase tracking-wider">Total Permittees</span>
+                    <i class="fa-solid fa-users text-ink-300 text-xs"></i>
+                </div>
+                <span id="hub-metric-permits" class="text-2xl font-bold text-ink-900">8</span>
+                <span class="text-[10px] text-ink-400 block mt-0.5">registered</span>
+            </div>
+            <div class="metric-card">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-[10px] font-bold text-ink-400 uppercase tracking-wider">Allowed Volume</span>
+                    <i class="fa-solid fa-cube text-ink-300 text-xs"></i>
+                </div>
+                <span id="hub-metric-allowed" class="text-2xl font-bold text-ink-900">48,592</span>
+                <span class="text-[10px] text-ink-400 block mt-0.5">cubic meters</span>
+            </div>
+            <div class="metric-card">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-[10px] font-bold text-ink-400 uppercase tracking-wider">Extracted</span>
+                    <i class="fa-solid fa-truck text-ink-300 text-xs"></i>
+                </div>
+                <span id="hub-metric-extracted" class="text-2xl font-bold text-amber-600">22,147</span>
+                <span class="text-[10px] text-ink-400 block mt-0.5">cubic meters</span>
+            </div>
+            <div class="metric-card">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-[10px] font-bold text-ink-400 uppercase tracking-wider">Low Balance</span>
+                    <i class="fa-solid fa-triangle-exclamation text-rose-300 text-xs"></i>
+                </div>
+                <span id="hub-metric-alerts" class="text-2xl font-bold text-rose-600">1</span>
+                <span class="text-[10px] text-ink-400 block mt-0.5">needs attention</span>
+            </div>
+        </div>
+
+        <div>
+            <h2 class="text-sm font-bold text-ink-700 mb-3">Quick Actions</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <a href="./directory.html" class="group bg-white border border-ink-200 rounded-xl p-5 cursor-pointer hover:border-enro-500 hover:shadow-md transition-all block">
+                    <div class="flex items-start gap-4">
+                        <div class="w-10 h-10 bg-enro-50 border border-enro-200 rounded-lg flex items-center justify-center text-enro-700 group-hover:bg-enro-600 group-hover:text-white transition shrink-0">
+                            <i class="fa-solid fa-address-book text-sm"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h3 class="font-bold text-sm text-ink-900 group-hover:text-enro-700 transition">Permit Directory</h3>
+                            <p class="text-xs text-ink-500 mt-1 leading-relaxed">Browse, search, and manage all registered permittees. Add new applications and filter by status.</p>
+                            <div class="flex items-center gap-1 mt-3 text-[11px] font-bold text-enro-600">
+                                <span>Open Directory</span>
+                                <i class="fa-solid fa-arrow-right text-[10px] group-hover:translate-x-1 transition"></i>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+
+                <a href="./annual-volume.html" class="group bg-white border border-ink-200 rounded-xl p-5 cursor-pointer hover:border-enro-500 hover:shadow-md transition-all block">
+                    <div class="flex items-start gap-4">
+                        <div class="w-10 h-10 bg-enro-50 border border-enro-200 rounded-lg flex items-center justify-center text-enro-700 group-hover:bg-enro-600 group-hover:text-white transition shrink-0">
+                            <i class="fa-solid fa-scale-balanced text-sm"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h3 class="font-bold text-sm text-ink-900 group-hover:text-enro-700 transition">Annual Volume Ledger</h3>
+                            <p class="text-xs text-ink-500 mt-1 leading-relaxed">Track remaining balances, record delivery receipts, and monitor low-volume alerts per permittee.</p>
+                            <div class="flex items-center gap-1 mt-3 text-[11px] font-bold text-enro-600">
+                                <span>View Ledgers</span>
+                                <i class="fa-solid fa-arrow-right text-[10px] group-hover:translate-x-1 transition"></i>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <div class="bg-white border border-ink-200 rounded-xl overflow-hidden">
+            <div class="px-5 py-3.5 border-b border-ink-100 flex items-center justify-between">
+                <h2 class="text-sm font-bold text-ink-800">Recent Permit Records</h2>
+                <a href="./directory.html" class="text-[11px] font-bold text-enro-600 hover:text-enro-800">View all →</a>
+            </div>
+            <div id="hub-recent-list" class="divide-y divide-ink-50"></div>
+        </div>
+    </div>
+</main>
+
+<div id="toast" class="toast">
+    <div id="toast-icon" class="shrink-0">
+        <i class="fa-solid fa-circle-check text-enro-400 text-lg"></i>
+    </div>
+    <div class="flex-1 min-w-0">
+        <h5 id="toast-title" class="font-bold text-xs text-white">Success</h5>
+        <p id="toast-message" class="text-[11px] text-ink-300 mt-0.5 leading-relaxed">Operation completed.</p>
+    </div>
+</div>
+
+<!-- Adjusted JS paths -->
+<script src="../js/app.js"></script>
+<script src="../js/dashboard.js"></script>
+</body>
+</html>
