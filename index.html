@@ -4,267 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ENRO • Permit & Extraction Volume Monitoring</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- External Libraries -->
+    <link rel="stylesheet" href="./css/tailwind.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        mono: ['JetBrains Mono', 'monospace'],
-                    },
-                    colors: {
-                        enro: {
-                            50: '#f0fdf4', 100: '#dcfce7', 200: '#bbf7d0',
-                            300: '#86efac', 400: '#4ade80', 500: '#22c55e',
-                            600: '#16a34a', 700: '#15803d', 800: '#166534',
-                            900: '#14532d', 950: '#052e16'
-                        },
-                        ink: {
-                            50: '#f8fafc', 100: '#f1f5f9', 200: '#e2e8f0',
-                            300: '#cbd5e1', 400: '#94a3b8', 500: '#64748b',
-                            600: '#475569', 700: '#334155', 800: '#1e293b', 900: '#0f172a'
-                        }
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        * { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        
-        .data-table th {
-            font-size: 0.65rem;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-            font-weight: 700;
-            color: #475569;
-            padding: 0.875rem 1rem;
-            background: #f8fafc;
-            border-bottom: 2px solid #e2e8f0;
-            white-space: nowrap;
-        }
-        .data-table td {
-            padding: 0.875rem 1rem;
-            border-bottom: 1px solid #f1f5f9;
-            font-size: 0.8rem;
-            color: #334155;
-        }
-        .data-table tr:last-child td { border-bottom: none; }
-        .data-table tr:hover td { background: #f8fafc; }
-        
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.375rem;
-            padding: 0.25rem 0.625rem;
-            border-radius: 6px;
-            font-size: 0.65rem;
-            font-weight: 700;
-            letter-spacing: 0.02em;
-            text-transform: uppercase;
-            border: 1px solid;
-        }
-        .status-badge::before {
-            content: '';
-            width: 5px;
-            height: 5px;
-            border-radius: 50%;
-            background: currentColor;
-        }
-        
-        .nav-link {
-            position: relative;
-            padding: 0.5rem 1rem;
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: #cbd5e1;
-            border-radius: 8px;
-            transition: all 0.15s ease;
-        }
-        .nav-link:hover { color: white; background: rgba(255,255,255,0.08); }
-        .nav-link.active {
-            color: white;
-            background: rgba(255,255,255,0.12);
-        }
-        .nav-link.active::after {
-            content: '';
-            position: absolute;
-            bottom: -1px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 60%;
-            height: 2px;
-            background: #4ade80;
-            border-radius: 1px;
-        }
-        
-        .metric-card {
-            background: white;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 1.25rem;
-            transition: box-shadow 0.2s ease;
-        }
-        .metric-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        
-        .input-field {
-            width: 100%;
-            padding: 0.625rem 0.875rem;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
-            font-size: 0.8rem;
-            transition: all 0.15s ease;
-            background: white;
-        }
-        .input-field:focus {
-            outline: none;
-            border-color: #16a34a;
-            box-shadow: 0 0 0 3px rgba(22,163,74,0.1);
-        }
-        .input-field::placeholder { color: #94a3b8; }
-        
-        .btn-primary {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.625rem 1.25rem;
-            background: #15803d;
-            color: white;
-            font-size: 0.8rem;
-            font-weight: 600;
-            border-radius: 8px;
-            border: none;
-            cursor: pointer;
-            transition: all 0.15s ease;
-        }
-        .btn-primary:hover { background: #166534; }
-        
-        .btn-secondary {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.625rem 1.25rem;
-            background: white;
-            color: #334155;
-            font-size: 0.8rem;
-            font-weight: 600;
-            border-radius: 8px;
-            border: 1px solid #cbd5e1;
-            cursor: pointer;
-            transition: all 0.15s ease;
-        }
-        .btn-secondary:hover { background: #f8fafc; border-color: #94a3b8; }
-        
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(15,23,42,0.6);
-            backdrop-filter: blur(4px);
-            z-index: 50;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 1rem;
-        }
-        .modal-overlay.active { display: flex; }
-        
-        .toast {
-            position: fixed;
-            bottom: 1.5rem;
-            right: 1.5rem;
-            z-index: 60;
-            background: #0f172a;
-            color: white;
-            padding: 0.875rem 1.25rem;
-            border-radius: 10px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            transform: translateY(150%);
-            opacity: 0;
-            transition: all 0.3s ease;
-            max-width: 24rem;
-            border: 1px solid #1e293b;
-        }
-        .toast.show { transform: translateY(0); opacity: 1; }
-        
-        .ledger-row-negative { color: #dc2626; font-weight: 600; }
-        .ledger-row-balance { color: #15803d; font-weight: 700; }
-        
-        .warning-banner {
-            background: #fffbeb;
-            border: 1px solid #fcd34d;
-            border-left: 4px solid #f59e0b;
-            border-radius: 10px;
-            padding: 1rem 1.25rem;
-            display: flex;
-            align-items: flex-start;
-            gap: 0.875rem;
-        }
-        
-        .empty-state {
-            padding: 3rem 1rem;
-            text-align: center;
-            color: #94a3b8;
-            font-size: 0.85rem;
-        }
-        .empty-state i { font-size: 2rem; margin-bottom: 0.75rem; display: block; opacity: 0.4; }
-        
-        .breadcrumb {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.75rem;
-            color: #64748b;
-        }
-        .breadcrumb a { color: #64748b; text-decoration: none; }
-        .breadcrumb a:hover { color: #15803d; }
-        .breadcrumb span { color: #0f172a; font-weight: 600; }
-        
-        .form-section {
-            border-bottom: 1px solid #f1f5f9;
-            padding-bottom: 1.25rem;
-            margin-bottom: 1.25rem;
-        }
-        .form-section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-        .form-section-title {
-            font-size: 0.65rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #64748b;
-            margin-bottom: 0.75rem;
-        }
-        
-        .stat-divider { border-right: 1px solid #e2e8f0; }
-        .stat-divider:last-child { border-right: none; }
-    </style>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="./css/style.css">
 </head>
 <body class="h-full bg-ink-50 font-sans text-ink-800">
 
-<!-- ========== LOGIN ========== -->
+<!-- ========== LOGIN VIEW ========== -->
 <div id="login-view" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-enro-950 via-enro-900 to-ink-900 p-4">
     <div class="w-full max-w-sm">
         <!-- Logo -->
         <div class="text-center mb-8">
             <div class="w-14 h-14 bg-white/10 backdrop-blur rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/20">
-                <i class="fa-solid fa-mountain-sun text-enro-300 text-2xl"></i>
+                <img src="./assets/enro-logo.png" alt="ENRO logo" class="w-12 h-12 object-contain">
             </div>
             <h1 class="text-white font-bold text-lg tracking-tight">ENRO Portal</h1>
             <p class="text-enro-300/70 text-xs mt-1">Permit & Extraction Volume Monitoring</p>
         </div>
 
-        <!-- Card -->
+        <!-- Login Card -->
         <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
-            <!-- Role toggle -->
+            <!-- Role Toggle -->
             <div class="flex border-b border-ink-100">
                 <button type="button" id="tab-login-admin" onclick="toggleLoginMode('admin')"
                     class="flex-1 py-3.5 text-xs font-bold text-enro-700 border-b-2 border-enro-700 bg-white transition">
@@ -276,6 +41,7 @@
                 </button>
             </div>
 
+            <!-- Login Form -->
             <form id="login-form" onsubmit="handleLogin(event)" class="p-6 space-y-5">
                 <div>
                     <label id="lbl-username" class="block text-[11px] font-bold text-ink-500 uppercase tracking-wider mb-1.5">Username</label>
@@ -317,17 +83,17 @@
     </div>
 </div>
 
-<!-- ========== APP ========== -->
+<!-- ========== MAIN APP ========== -->
 <div id="app-view" class="hidden min-h-screen flex flex-col">
 
-    <!-- Top Bar -->
+    <!-- Top Navigation -->
     <header class="bg-enro-950 sticky top-0 z-30 border-b border-enro-900/50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-14">
                 <!-- Brand -->
                 <div class="flex items-center gap-3 cursor-pointer" onclick="switchTab('hub')">
-                    <div class="w-8 h-8 bg-enro-800 rounded-lg flex items-center justify-center border border-enro-700">
-                        <i class="fa-solid fa-mountain-sun text-enro-300 text-sm"></i>
+                    <div class="w-8 h-8 bg-white rounded-lg flex items-center justify-center border border-enro-700 overflow-hidden">
+                        <img src="./assets/enro-logo.png" alt="ENRO logo" class="w-7 h-7 object-contain">
                     </div>
                     <div class="leading-tight">
                         <span class="text-white font-bold text-sm block">ENRO Portal</span>
@@ -335,7 +101,7 @@
                     </div>
                 </div>
 
-                <!-- Nav -->
+                <!-- Desktop Nav -->
                 <nav class="hidden md:flex items-center gap-1">
                     <button onclick="switchTab('hub')" id="nav-hub" class="nav-link active">
                         <i class="fa-solid fa-house mr-1.5 text-xs"></i>Dashboard
@@ -348,7 +114,7 @@
                     </button>
                 </nav>
 
-                <!-- User -->
+                <!-- User Menu -->
                 <div class="flex items-center gap-2">
                     <div class="hidden sm:flex items-center gap-2 bg-enro-900/80 border border-enro-800 rounded-lg px-2.5 py-1.5">
                         <div id="user-badge" class="w-5 h-5 bg-enro-600 rounded-full flex items-center justify-center text-[9px] font-bold text-white">AD</div>
@@ -365,6 +131,7 @@
             </div>
         </div>
 
+        <!-- Mobile Menu -->
         <div id="mobile-menu" class="hidden md:hidden bg-enro-950 border-t border-enro-900 px-4 py-3 space-y-1">
             <button onclick="switchTab('hub'); toggleMobileMenu();" class="w-full text-left px-3 py-2 text-sm font-semibold text-enro-100 hover:bg-enro-800 rounded-lg">Dashboard</button>
             <button onclick="switchTab('directory'); toggleMobileMenu();" class="w-full text-left px-3 py-2 text-sm font-semibold text-enro-100 hover:bg-enro-800 rounded-lg">Directory</button>
@@ -372,12 +139,11 @@
         </div>
     </header>
 
-    <!-- Main -->
+    <!-- Main Content -->
     <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
-        <!-- ===== HUB ===== -->
+        <!-- ===== DASHBOARD ===== -->
         <div id="tab-hub" class="space-y-6">
-            <!-- Page header -->
             <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
                 <div>
                     <h1 class="text-xl font-bold text-ink-900">Dashboard</h1>
@@ -388,7 +154,7 @@
                 </div>
             </div>
 
-            <!-- Metrics -->
+            <!-- Metrics Grid -->
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div class="metric-card">
                     <div class="flex items-center justify-between mb-2">
@@ -428,7 +194,7 @@
             <div>
                 <h2 class="text-sm font-bold text-ink-700 mb-3">Quick Actions</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <!-- Directory -->
+                    <!-- Directory Card -->
                     <div onclick="switchTab('directory')" class="group bg-white border border-ink-200 rounded-xl p-5 cursor-pointer hover:border-enro-500 hover:shadow-md transition-all">
                         <div class="flex items-start gap-4">
                             <div class="w-10 h-10 bg-enro-50 border border-enro-200 rounded-lg flex items-center justify-center text-enro-700 group-hover:bg-enro-600 group-hover:text-white transition shrink-0">
@@ -445,7 +211,7 @@
                         </div>
                     </div>
 
-                    <!-- Annual Volume -->
+                    <!-- Annual Volume Card -->
                     <div onclick="switchTab('annual-volume')" class="group bg-white border border-ink-200 rounded-xl p-5 cursor-pointer hover:border-enro-500 hover:shadow-md transition-all">
                         <div class="flex items-start gap-4">
                             <div class="w-10 h-10 bg-enro-50 border border-enro-200 rounded-lg flex items-center justify-center text-enro-700 group-hover:bg-enro-600 group-hover:text-white transition shrink-0">
@@ -464,21 +230,20 @@
                 </div>
             </div>
 
-            <!-- Recent Activity -->
+            <!-- Recent Records -->
             <div class="bg-white border border-ink-200 rounded-xl overflow-hidden">
                 <div class="px-5 py-3.5 border-b border-ink-100 flex items-center justify-between">
                     <h2 class="text-sm font-bold text-ink-800">Recent Permit Records</h2>
                     <button onclick="switchTab('directory')" class="text-[11px] font-bold text-enro-600 hover:text-enro-800">View all →</button>
                 </div>
                 <div id="hub-recent-list" class="divide-y divide-ink-50">
-                    <!-- JS -->
+                    <!-- JS renders -->
                 </div>
             </div>
         </div>
 
         <!-- ===== DIRECTORY ===== -->
         <div id="tab-directory" class="hidden space-y-5">
-            <!-- Header -->
             <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
                 <div>
                     <h1 class="text-xl font-bold text-ink-900">Permit Directory</h1>
@@ -527,7 +292,7 @@
                             </tr>
                         </thead>
                         <tbody id="directory-tbody">
-                            <!-- JS -->
+                            <!-- JS renders -->
                         </tbody>
                     </table>
                 </div>
@@ -537,7 +302,7 @@
         <!-- ===== ANNUAL VOLUME ===== -->
         <div id="tab-annual-volume" class="hidden space-y-5">
 
-            <!-- LEVEL 1 -->
+            <!-- Level 1: List -->
             <div id="annual-level-1-list" class="space-y-5">
                 <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
                     <div>
@@ -568,16 +333,16 @@
                                 </tr>
                             </thead>
                             <tbody id="annual-list-tbody">
-                                <!-- JS -->
+                                <!-- JS renders -->
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
 
-            <!-- LEVEL 2 -->
+            <!-- Level 2: Ledger -->
             <div id="annual-level-2-ledger" class="hidden space-y-5">
-                <!-- Breadcrumb + selector -->
+                <!-- Breadcrumb & Selector -->
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div class="breadcrumb">
                         <a href="#" onclick="backToAnnualList(); return false;">Annual Volume</a>
@@ -587,7 +352,7 @@
                     <div class="flex items-center gap-2">
                         <label class="text-[11px] font-bold text-ink-500 uppercase tracking-wider">Switch:</label>
                         <select id="annual-permittee-select" onchange="openAnnualLedgerById(this.value)" class="input-field w-64 text-xs font-semibold">
-                            <!-- JS -->
+                            <!-- JS renders -->
                         </select>
                     </div>
                 </div>
@@ -595,7 +360,6 @@
                 <!-- Summary Card -->
                 <div class="bg-white border border-ink-200 rounded-xl overflow-hidden">
                     <div class="grid grid-cols-1 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-ink-100">
-                        <!-- Identity -->
                         <div class="p-5">
                             <span class="text-[10px] font-bold text-ink-400 uppercase tracking-wider block mb-1">Permittee</span>
                             <h2 id="av-name" class="text-base font-bold text-ink-900">-</h2>
@@ -604,19 +368,16 @@
                                 <span>-</span>
                             </p>
                         </div>
-                        <!-- Permit -->
                         <div class="p-5">
                             <span class="text-[10px] font-bold text-ink-400 uppercase tracking-wider block mb-1">Permit Details</span>
                             <span id="av-permit-no" class="inline-block font-mono text-xs font-bold bg-enro-50 text-enro-800 border border-enro-200 px-2 py-0.5 rounded">-</span>
                             <p id="av-dates" class="text-[11px] text-ink-500 mt-1.5">-</p>
                         </div>
-                        <!-- Volume -->
                         <div class="p-5">
                             <span class="text-[10px] font-bold text-ink-400 uppercase tracking-wider block mb-1">Volume Allowed</span>
                             <h3 id="av-allowed" class="text-lg font-bold text-ink-900">-</h3>
                             <p id="av-rate" class="text-[11px] text-ink-500 mt-0.5">-</p>
                         </div>
-                        <!-- Remaining -->
                         <div class="p-5 bg-enro-50/60">
                             <span class="text-[10px] font-bold text-enro-700 uppercase tracking-wider block mb-1">Remaining Volume</span>
                             <div class="flex items-baseline gap-2">
@@ -627,7 +388,7 @@
                     </div>
                 </div>
 
-                <!-- Warning -->
+                <!-- Warning Banner -->
                 <div id="warning-low-volume-banner" class="warning-banner hidden">
                     <div class="w-8 h-8 bg-amber-500 rounded-lg flex items-center justify-center text-white shrink-0">
                         <i class="fa-solid fa-triangle-exclamation text-sm"></i>
@@ -640,7 +401,7 @@
                     </div>
                 </div>
 
-                <!-- Ledger -->
+                <!-- Ledger Table -->
                 <div class="bg-white border border-ink-200 rounded-xl overflow-hidden">
                     <div class="px-5 py-3.5 border-b border-ink-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         <div>
@@ -668,7 +429,7 @@
                                 </tr>
                             </thead>
                             <tbody id="annual-transactions-tbody">
-                                <!-- JS -->
+                                <!-- JS renders -->
                             </tbody>
                         </table>
                     </div>
@@ -749,7 +510,7 @@
                 </div>
             </div>
 
-            <!-- Validity -->
+            <!-- Validity & Status -->
             <div class="form-section">
                 <h4 class="form-section-title">Validity & Status</h4>
                 <div class="space-y-3">
@@ -800,7 +561,7 @@
         </div>
 
         <form id="form-add-tx" onsubmit="submitTransactionEntry(event)" class="p-5 overflow-y-auto space-y-4">
-            <!-- Context -->
+            <!-- Context Info -->
             <div class="bg-enro-50 border border-enro-200 rounded-lg p-3.5 space-y-1.5">
                 <div class="flex items-center justify-between">
                     <span class="text-[11px] font-bold text-ink-500 uppercase tracking-wider">Permittee</span>
@@ -812,6 +573,7 @@
                 </div>
             </div>
 
+            <!-- Transaction Details -->
             <div class="form-section">
                 <h4 class="form-section-title">Transaction Details</h4>
                 <div class="space-y-3">
@@ -848,6 +610,7 @@
                 </div>
             </div>
 
+            <!-- Error Message -->
             <div id="tx-modal-error" class="hidden bg-rose-50 border-l-4 border-rose-500 rounded-lg p-3 text-xs text-rose-700 font-medium">
                 <i class="fa-solid fa-circle-exclamation mr-1"></i>
                 Volume exceeds remaining balance. Transaction blocked.
@@ -875,404 +638,7 @@
     </div>
 </div>
 
-<!-- ========== JAVASCRIPT ========== -->
-<script>
-    // ============================================================
-    // DATA
-    // ============================================================
-    let permitteesData = [
-        { id:1, name:"ALYCHAN FERNANDEZ", location:"Calatrava - Pangangan", permitNo:"ROM # 007-15", type:"Commercial", commodity:"Sand & Gravel", rate:"1,9715 CU.M", allowedVol:2000.00, remainingVol:95.00, startDate:"2025-04-11", endDate:"2026-06-04", status:"Active",
-          transactions:[{ date:"2025-07-10", drNo:"DR-2025-002", volume:1905.00, amount:57150.00, opNo:"OP-8812", truckLoad:"Bulk Load / NAK-992", prevBal:2000.00, newBal:95.00 }] },
-        { id:2, name:"ROSE MARY SABLIGAN", location:"Alcantara - Colongoso", permitNo:"ROM # 018-25", type:"Commercial", commodity:"Sand & Gravel", rate:"7,998 MT", allowedVol:2400.00, remainingVol:2250.00, startDate:"2026-04-14", endDate:"2027-04-14", status:"Active",
-          transactions:[{ date:"2026-05-10", drNo:"DR-2026-011", volume:150.00, amount:4500.00, opNo:"OP-9011", truckLoad:"2 Trucks / NAK-123", prevBal:2400.00, newBal:2250.00 }] },
-        { id:3, name:"EDWIN QUSUMBING", location:"Alcantara - Colongoso", permitNo:"ROM # 026-6-25", type:"Commercial", commodity:"Sand & Gravel", rate:"4,976/1,449 MT", allowedVol:2000.00, remainingVol:1850.00, startDate:"2025-09-02", endDate:"2026-09-02", status:"Renewal in process",
-          transactions:[{ date:"2025-10-15", drNo:"DR-2025-001", volume:150.00, amount:4500.00, opNo:"OP-8410", truckLoad:"1 Dump Truck", prevBal:2000.00, newBal:1850.00 }] },
-        { id:4, name:"ELMAR MARTINEZ", location:"Alcantara - Colongoso", permitNo:"ROM # 017-25", type:"Commercial", commodity:"Sand & Gravel", rate:"10,000 MT", allowedVol:3600.00, remainingVol:3200.00, startDate:"2025-05-19", endDate:"2026-05-19", status:"Active",
-          transactions:[{ date:"2025-08-12", drNo:"DR-2025-104", volume:400.00, amount:12000.00, opNo:"OP-8501", truckLoad:"3 Trucks", prevBal:3600.00, newBal:3200.00 }] },
-        { id:5, name:"GAYMAR GAYTANO", location:"Alcantara - Colongoso", permitNo:"ROM # 09-3-25", type:"Commercial", commodity:"Sand & Gravel", rate:"0.8286", allowedVol:2000.00, remainingVol:2000.00, startDate:"2025-05-09", endDate:"2026-05-09", status:"Active", transactions:[] },
-        { id:6, name:"JUNDL AGRIPINO NGO", location:"Alcantara - Cahayagan Camili", permitNo:"ROM # 025-3-24", type:"Commercial", commodity:"Sand & Gravel", rate:"15,792 CU.M", allowedVol:20000.00, remainingVol:15420.00, startDate:"2025-01-21", endDate:"2027-01-21", status:"Active",
-          transactions:[{ date:"2025-04-10", drNo:"DR-2025-88", volume:4580.00, amount:137400.00, opNo:"OP-8119", truckLoad:"10 Trailer Loads", prevBal:20000.00, newBal:15420.00 }] },
-        { id:7, name:"JOEL SABLIGAN", location:"Limon Sur", permitNo:"ROM # 178-13-26", type:"Commercial", commodity:"Sand & Gravel", rate:"0.8454", allowedVol:5000.00, remainingVol:5000.00, startDate:"2026-03-11", endDate:"2027-03-11", status:"Active", transactions:[] },
-        { id:8, name:"BURGOS LEQUIN", location:"Looc - Punta", permitNo:"ROM # 127-5", type:"Quarry", commodity:"Pebbles", rate:"4.9935", allowedVol:2000.00, remainingVol:0.00, startDate:"2024-08-04", endDate:"2025-08-04", status:"Expired",
-          transactions:[{ date:"2024-09-01", drNo:"DR-2024-090", volume:2000.00, amount:60000.00, opNo:"OP-7210", truckLoad:"5 Heavy Loads", prevBal:2000.00, newBal:0.00 }] }
-    ];
-
-    let selectedPermitteeId = 1;
-    let currentLoginRole = 'admin';
-
-    // ============================================================
-    // HELPERS
-    // ============================================================
-    function getStatusInfo(p) {
-        if (p.remainingVol === 0) return { label:"Consumed", css:"bg-rose-50 text-rose-700 border-rose-200" };
-        if (p.remainingVol <= 100) return { label:"Low Volume", css:"bg-amber-50 text-amber-700 border-amber-200" };
-        if (!p.transactions || p.transactions.length === 0) return { label:"No Production", css:"bg-ink-100 text-ink-600 border-ink-200" };
-        if (p.remainingVol / p.allowedVol > 0.85) return { label:"Low Production", css:"bg-blue-50 text-blue-700 border-blue-200" };
-        return { label: p.status || "Active", css:"bg-enro-50 text-enro-700 border-enro-200" };
-    }
-
-    function formatNumber(n) { return Number(n).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 }); }
-
-    // ============================================================
-    // LOGIN
-    // ============================================================
-    function toggleLoginMode(mode) {
-        currentLoginRole = mode;
-        const btnAdmin = document.getElementById('tab-login-admin');
-        const btnUser = document.getElementById('tab-login-user');
-        const lblUser = document.getElementById('lbl-username');
-        const btnText = document.getElementById('btn-login-text');
-
-        if (mode === 'admin') {
-            btnAdmin.className = "flex-1 py-3.5 text-xs font-bold text-enro-700 border-b-2 border-enro-700 bg-white transition";
-            btnUser.className = "flex-1 py-3.5 text-xs font-bold text-ink-400 border-b-2 border-transparent hover:text-ink-600 transition";
-            lblUser.innerText = "Username";
-            btnText.innerText = "Sign in as Admin";
-            document.getElementById('username').value = "admin";
-        } else {
-            btnUser.className = "flex-1 py-3.5 text-xs font-bold text-enro-700 border-b-2 border-enro-700 bg-white transition";
-            btnAdmin.className = "flex-1 py-3.5 text-xs font-bold text-ink-400 border-b-2 border-transparent hover:text-ink-600 transition";
-            lblUser.innerText = "Staff ID";
-            btnText.innerText = "Sign in as Staff";
-            document.getElementById('username').value = "user";
-        }
-    }
-
-    function handleLogin(e) {
-        e.preventDefault();
-        document.getElementById('login-view').classList.add('hidden');
-        document.getElementById('app-view').classList.remove('hidden');
-        document.getElementById('user-role-label').innerText = currentLoginRole === 'admin' ? 'Admin Officer' : 'Field Staff';
-        document.getElementById('user-badge').innerText = currentLoginRole === 'admin' ? 'AD' : 'ST';
-        initDashboard();
-        showToast(`Signed in as ${currentLoginRole === 'admin' ? 'Admin Officer' : 'Field Staff'}`, 'success');
-    }
-
-    function handleLogout() {
-        document.getElementById('app-view').classList.add('hidden');
-        document.getElementById('login-view').classList.remove('hidden');
-        showToast('Signed out securely.', 'info');
-    }
-
-    // ============================================================
-    // NAVIGATION
-    // ============================================================
-    function switchTab(tab) {
-        ['hub','directory','annual-volume'].forEach(t => document.getElementById('tab-'+t).classList.add('hidden'));
-        document.querySelectorAll('.nav-link').forEach(b => b.classList.remove('active'));
-
-        if (tab === 'hub') {
-            document.getElementById('tab-hub').classList.remove('hidden');
-            document.getElementById('nav-hub').classList.add('active');
-            updateHubMetrics();
-            renderHubRecent();
-        } else if (tab === 'directory') {
-            document.getElementById('tab-directory').classList.remove('hidden');
-            document.getElementById('nav-directory').classList.add('active');
-            renderDirectoryTable(permitteesData);
-        } else if (tab === 'annual-volume') {
-            document.getElementById('tab-annual-volume').classList.remove('hidden');
-            document.getElementById('nav-annual-volume').classList.add('active');
-            document.getElementById('annual-level-1-list').classList.remove('hidden');
-            document.getElementById('annual-level-2-ledger').classList.add('hidden');
-            renderAnnualLevel1List(permitteesData);
-        }
-    }
-
-    function toggleMobileMenu() { document.getElementById('mobile-menu').classList.toggle('hidden'); }
-
-    function initDashboard() {
-        document.getElementById('hub-date').innerText = new Date().toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
-        updateHubMetrics();
-        renderHubRecent();
-        renderDirectoryTable(permitteesData);
-        renderAnnualLevel1List(permitteesData);
-        populateAnnualDropdown();
-    }
-
-    // ============================================================
-    // HUB
-    // ============================================================
-    function updateHubMetrics() {
-        const totalAllowed = permitteesData.reduce((s,p) => s + p.allowedVol, 0);
-        const totalRemaining = permitteesData.reduce((s,p) => s + p.remainingVol, 0);
-        const totalExtracted = totalAllowed - totalRemaining;
-        const lowAlerts = permitteesData.filter(p => p.remainingVol <= 100).length;
-
-        document.getElementById('hub-metric-permits').innerText = permitteesData.length;
-        document.getElementById('hub-metric-allowed').innerText = formatNumber(totalAllowed);
-        document.getElementById('hub-metric-extracted').innerText = formatNumber(totalExtracted);
-        document.getElementById('hub-metric-alerts').innerText = lowAlerts;
-    }
-
-    function renderHubRecent() {
-        const container = document.getElementById('hub-recent-list');
-        const recent = permitteesData.slice(0, 4);
-        container.innerHTML = recent.map(p => {
-            const s = getStatusInfo(p);
-            return `
-                <div class="px-5 py-3 flex items-center justify-between hover:bg-ink-50/50 transition cursor-pointer" onclick="openAnnualLedgerById(${p.id})">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <div class="w-8 h-8 bg-enro-50 border border-enro-100 rounded-lg flex items-center justify-center text-enro-700 text-[10px] font-bold shrink-0">
-                            ${p.name.split(' ').map(w=>w[0]).slice(0,2).join('')}
-                        </div>
-                        <div class="min-w-0">
-                            <p class="text-xs font-bold text-ink-800 truncate">${p.name}</p>
-                            <p class="text-[10px] text-ink-400 font-mono">${p.permitNo} • ${p.location}</p>
-                        </div>
-                    </div>
-                    <div class="text-right shrink-0 ml-3">
-                        <p class="text-xs font-bold ${p.remainingVol <= 100 ? 'text-rose-600' : 'text-ink-800'}">${formatNumber(p.remainingVol)} <span class="text-[10px] font-normal text-ink-400">cu.m</span></p>
-                        <span class="status-badge ${s.css} mt-0.5">${s.label}</span>
-                    </div>
-                </div>
-            `;
-        }).join('');
-    }
-
-    // ============================================================
-    // DIRECTORY
-    // ============================================================
-    function renderDirectoryTable(data) {
-        const tbody = document.getElementById('directory-tbody');
-        document.getElementById('directory-count-badge').innerText = `${data.length} ${data.length === 1 ? 'entry' : 'entries'}`;
-
-        if (data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><i class="fa-solid fa-inbox"></i>No permittees match your search criteria.</div></td></tr>`;
-            return;
-        }
-
-        tbody.innerHTML = data.map(p => {
-            const s = getStatusInfo(p);
-            return `
-                <tr>
-                    <td class="font-bold text-ink-900">${p.name}</td>
-                    <td class="text-ink-500 text-xs">${p.location}</td>
-                    <td><span class="font-mono text-xs font-semibold text-enro-700 bg-enro-50 px-1.5 py-0.5 rounded border border-enro-100">${p.permitNo}</span></td>
-                    <td class="text-ink-600 text-xs">${p.type}</td>
-                    <td class="text-ink-600 text-xs">${p.commodity}</td>
-                    <td class="text-right font-semibold text-ink-700">${formatNumber(p.allowedVol)}</td>
-                    <td class="text-right font-bold ${p.remainingVol <= 100 ? 'text-rose-600' : 'text-enro-700'}">${formatNumber(p.remainingVol)}</td>
-                    <td class="text-center"><span class="status-badge ${s.css}">${s.label}</span></td>
-                    <td class="text-center">
-                        <button onclick="openAnnualLedgerById(${p.id})" class="text-[11px] font-bold text-enro-700 hover:text-enro-900 hover:underline">
-                            View Ledger
-                        </button>
-                    </td>
-                </tr>
-            `;
-        }).join('');
-    }
-
-    function filterDirectoryTable() {
-        const q = document.getElementById('directory-search-input').value.toLowerCase();
-        const s = document.getElementById('directory-status-filter').value;
-        const filtered = permitteesData.filter(p =>
-            (p.name.toLowerCase().includes(q) || p.permitNo.toLowerCase().includes(q) || p.location.toLowerCase().includes(q)) &&
-            (s === "" || p.status === s)
-        );
-        renderDirectoryTable(filtered);
-    }
-
-    // ============================================================
-    // ANNUAL VOLUME
-    // ============================================================
-    function renderAnnualLevel1List(data) {
-        const tbody = document.getElementById('annual-list-tbody');
-        if (data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><i class="fa-solid fa-inbox"></i>No permittees match your search.</div></td></tr>`;
-            return;
-        }
-        tbody.innerHTML = data.map(p => {
-            const s = getStatusInfo(p);
-            return `
-                <tr class="cursor-pointer" onclick="openAnnualLedgerById(${p.id})">
-                    <td class="font-bold text-ink-900">${p.name}</td>
-                    <td><span class="font-mono text-xs font-semibold text-enro-700">${p.permitNo}</span></td>
-                    <td class="text-right font-bold ${p.remainingVol <= 100 ? 'text-rose-600' : 'text-enro-700'}">${formatNumber(p.remainingVol)} <span class="text-[10px] font-normal text-ink-400">cu.m</span></td>
-                    <td class="text-right text-ink-600">${formatNumber(p.allowedVol)} <span class="text-[10px] text-ink-400">cu.m</span></td>
-                    <td class="text-center"><span class="status-badge ${s.css}">${s.label}</span></td>
-                    <td class="text-center">
-                        <span class="text-[11px] font-bold text-enro-700">Open →</span>
-                    </td>
-                </tr>
-            `;
-        }).join('');
-    }
-
-    function filterAnnualListTable() {
-        const q = document.getElementById('annual-list-search').value.toLowerCase();
-        renderAnnualLevel1List(permitteesData.filter(p => p.name.toLowerCase().includes(q) || p.permitNo.toLowerCase().includes(q)));
-    }
-
-    function openAnnualLedgerById(id) {
-        selectedPermitteeId = parseInt(id);
-        switchTab('annual-volume');
-        document.getElementById('annual-level-1-list').classList.add('hidden');
-        document.getElementById('annual-level-2-ledger').classList.remove('hidden');
-        populateAnnualDropdown();
-        loadPermitteeLedger(selectedPermitteeId);
-    }
-
-    function backToAnnualList() {
-        document.getElementById('annual-level-2-ledger').classList.add('hidden');
-        document.getElementById('annual-level-1-list').classList.remove('hidden');
-        renderAnnualLevel1List(permitteesData);
-    }
-
-    function populateAnnualDropdown() {
-        const sel = document.getElementById('annual-permittee-select');
-        sel.innerHTML = permitteesData.map(p => `<option value="${p.id}">${p.name} — ${p.permitNo}</option>`).join('');
-        sel.value = selectedPermitteeId;
-    }
-
-    function loadPermitteeLedger(id) {
-        selectedPermitteeId = parseInt(id);
-        const p = permitteesData.find(x => x.id === selectedPermitteeId);
-        if (!p) return;
-
-        document.getElementById('annual-permittee-select').value = selectedPermitteeId;
-        document.getElementById('breadcrumb-name').innerText = p.name;
-        document.getElementById('av-name').innerText = p.name;
-        document.getElementById('av-location').innerHTML = `<i class="fa-solid fa-location-dot text-ink-300 text-[10px]"></i><span>${p.location}</span>`;
-        document.getElementById('av-permit-no').innerText = p.permitNo;
-        document.getElementById('av-dates').innerText = `${p.startDate} → ${p.endDate}`;
-        document.getElementById('av-allowed').innerText = `${formatNumber(p.allowedVol)} cu.m`;
-        document.getElementById('av-rate').innerText = `Rate: ${p.rate}`;
-        document.getElementById('av-remaining').innerText = `${formatNumber(p.remainingVol)} cu.m`;
-
-        const s = getStatusInfo(p);
-        document.getElementById('av-status-tag').className = `status-badge ${s.css}`;
-        document.getElementById('av-status-tag').innerText = s.label;
-
-        document.getElementById('warning-low-volume-banner').classList.toggle('hidden', p.remainingVol > 100);
-
-        renderLedgerTable(p);
-    }
-
-    function renderLedgerTable(p) {
-        const tbody = document.getElementById('annual-transactions-tbody');
-        if (!p.transactions || p.transactions.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><i class="fa-solid fa-receipt"></i>No delivery receipt transactions recorded yet.</div></td></tr>`;
-            return;
-        }
-        tbody.innerHTML = [...p.transactions].reverse().map(tx => `
-            <tr>
-                <td class="text-ink-600 whitespace-nowrap">${tx.date}</td>
-                <td class="text-right ledger-row-negative whitespace-nowrap">-${formatNumber(tx.volume)}</td>
-                <td><span class="font-mono text-[11px] font-semibold text-enro-700 bg-enro-50 px-1.5 py-0.5 rounded border border-enro-100">${tx.drNo}</span></td>
-                <td class="text-right text-ink-700 whitespace-nowrap">₱${formatNumber(tx.amount)}</td>
-                <td><span class="font-mono text-[11px] text-ink-500">${tx.opNo || '—'}</span></td>
-                <td class="text-ink-600 text-xs">${tx.truckLoad}</td>
-                <td class="text-right text-ink-500 whitespace-nowrap">${formatNumber(tx.prevBal)}</td>
-                <td class="text-right ledger-row-balance whitespace-nowrap">${formatNumber(tx.newBal)}</td>
-            </tr>
-        `).join('');
-    }
-
-    // ============================================================
-    // MODALS
-    // ============================================================
-    function openAddEntryModal() { document.getElementById('modal-add-entry').classList.add('active'); }
-    function closeAddEntryModal() { document.getElementById('modal-add-entry').classList.remove('active'); }
-
-    function submitNewPermitEntry(e) {
-        e.preventDefault();
-        const allowed = parseFloat(document.getElementById('new-allowed-vol').value);
-        const np = {
-            id: permitteesData.length + 1,
-            name: document.getElementById('new-name').value.trim().toUpperCase(),
-            location: document.getElementById('new-location').value.trim(),
-            permitNo: document.getElementById('new-permit-no').value.trim(),
-            type: document.getElementById('new-permit-type').value,
-            commodity: document.getElementById('new-commodity').value,
-            rate: document.getElementById('new-rate').value.trim() || 'N/A',
-            allowedVol: allowed,
-            remainingVol: allowed,
-            startDate: document.getElementById('new-start-date').value,
-            endDate: document.getElementById('new-end-date').value,
-            status: document.getElementById('new-status').value,
-            transactions: []
-        };
-        permitteesData.push(np);
-        closeAddEntryModal();
-        renderDirectoryTable(permitteesData);
-        renderAnnualLevel1List(permitteesData);
-        populateAnnualDropdown();
-        updateHubMetrics();
-        renderHubRecent();
-        showToast(`Permit record for ${np.name} created successfully.`, 'success');
-    }
-
-    function openAddTransactionModal() {
-        const p = permitteesData.find(x => x.id === selectedPermitteeId);
-        if (!p) return;
-        document.getElementById('tx-modal-permittee-name').innerText = p.name;
-        document.getElementById('tx-modal-current-balance').innerText = `${formatNumber(p.remainingVol)} cu.m`;
-        document.getElementById('tx-date').value = new Date().toISOString().slice(0,10);
-        document.getElementById('tx-dr-no').value = `DR-2026-${Math.floor(100+Math.random()*900)}`;
-        document.getElementById('tx-op-no').value = `OP-${Math.floor(1000+Math.random()*9000)}`;
-        document.getElementById('tx-volume').value = '';
-        document.getElementById('tx-truck-load').value = '';
-        document.getElementById('tx-amount').value = '';
-        document.getElementById('tx-modal-error').classList.add('hidden');
-        document.getElementById('modal-add-tx').classList.add('active');
-    }
-
-    function closeAddTransactionModal() { document.getElementById('modal-add-tx').classList.remove('active'); }
-
-    function submitTransactionEntry(e) {
-        e.preventDefault();
-        const vol = parseFloat(document.getElementById('tx-volume').value);
-        const p = permitteesData.find(x => x.id === selectedPermitteeId);
-        if (vol > p.remainingVol) {
-            document.getElementById('tx-modal-error').classList.remove('hidden');
-            return;
-        }
-        const prev = p.remainingVol;
-        const newBal = prev - vol;
-        p.transactions.push({
-            date: document.getElementById('tx-date').value,
-            drNo: document.getElementById('tx-dr-no').value.trim(),
-            volume: vol,
-            amount: parseFloat(document.getElementById('tx-amount').value) || 0,
-            opNo: document.getElementById('tx-op-no').value.trim(),
-            truckLoad: document.getElementById('tx-truck-load').value.trim(),
-            prevBal: prev,
-            newBal: newBal
-        });
-        p.remainingVol = newBal;
-        closeAddTransactionModal();
-        loadPermitteeLedger(selectedPermitteeId);
-        populateAnnualDropdown();
-        updateHubMetrics();
-        renderHubRecent();
-        showToast(`DR recorded. Remaining balance: ${formatNumber(newBal)} cu.m`, 'success');
-    }
-
-    // ============================================================
-    // TOAST
-    // ============================================================
-    function showToast(message, type = 'success') {
-        const toast = document.getElementById('toast');
-        document.getElementById('toast-title').innerText = type === 'success' ? 'Success' : 'Notice';
-        document.getElementById('toast-message').innerText = message;
-        document.getElementById('toast-icon').innerHTML = type === 'success'
-            ? '<i class="fa-solid fa-circle-check text-enro-400 text-lg"></i>'
-            : '<i class="fa-solid fa-circle-info text-blue-400 text-lg"></i>';
-        toast.classList.add('show');
-        clearTimeout(window.__toastTimer);
-        window.__toastTimer = setTimeout(() => toast.classList.remove('show'), 3500);
-    }
-
-    // Expose
-    Object.assign(window, {
-        toggleLoginMode, handleLogin, handleLogout, switchTab, toggleMobileMenu,
-        filterDirectoryTable, filterAnnualListTable, openAnnualLedgerById, backToAnnualList,
-        openAddEntryModal, closeAddEntryModal, submitNewPermitEntry,
-        openAddTransactionModal, closeAddTransactionModal, submitTransactionEntry,
-        showToast
-    });
-</script>
+<!-- JavaScript -->
+<script src="./js/app.js"></script>
 </body>
 </html>

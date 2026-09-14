@@ -1,0 +1,345 @@
+/* ============================================================
+   ENRO Portal — Custom Styles
+   ============================================================ */
+
+/* Base Resets & Typography */
+* {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* ============================================================
+   Data Tables
+   ============================================================ */
+.data-table th {
+    font-size: 0.65rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: #475569;
+    padding: 0.875rem 1rem;
+    background: #f8fafc;
+    border-bottom: 2px solid #e2e8f0;
+    white-space: nowrap;
+}
+
+.data-table td {
+    padding: 0.875rem 1rem;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.8rem;
+    color: #334155;
+}
+
+.data-table tr:last-child td {
+    border-bottom: none;
+}
+
+.data-table tr:hover td {
+    background: #f8fafc;
+}
+
+/* ============================================================
+   Status Badges
+   ============================================================ */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.25rem 0.625rem;
+    border-radius: 6px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    border: 1px solid;
+}
+
+.status-badge::before {
+    content: '';
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+/* ============================================================
+   Navigation
+   ============================================================ */
+.nav-link {
+    position: relative;
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #cbd5e1;
+    border-radius: 8px;
+    transition: all 0.15s ease;
+}
+
+.nav-link:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.nav-link.active {
+    color: white;
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.nav-link.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60%;
+    height: 2px;
+    background: #4ade80;
+    border-radius: 1px;
+}
+
+/* ============================================================
+   Metric Cards
+   ============================================================ */
+.metric-card {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.25rem;
+    transition: box-shadow 0.2s ease;
+}
+
+.metric-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* ============================================================
+   Form Inputs
+   ============================================================ */
+.input-field {
+    width: 100%;
+    padding: 0.625rem 0.875rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    transition: all 0.15s ease;
+    background: white;
+}
+
+.input-field:focus {
+    outline: none;
+    border-color: #16a34a;
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+}
+
+.input-field::placeholder {
+    color: #94a3b8;
+}
+
+/* ============================================================
+   Buttons
+   ============================================================ */
+.btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.25rem;
+    background: #15803d;
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-primary:hover {
+    background: #166534;
+}
+
+.btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.25rem;
+    background: white;
+    color: #334155;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-secondary:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+}
+
+/* ============================================================
+   Modals
+   ============================================================ */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 50;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.modal-overlay.active {
+    display: flex;
+}
+
+/* ============================================================
+   Toast Notifications
+   ============================================================ */
+.toast {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    z-index: 60;
+    background: #0f172a;
+    color: white;
+    padding: 0.875rem 1.25rem;
+    border-radius: 10px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    transform: translateY(150%);
+    opacity: 0;
+    transition: all 0.3s ease;
+    max-width: 24rem;
+    border: 1px solid #1e293b;
+}
+
+.toast.show {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+/* ============================================================
+   Ledger Specific
+   ============================================================ */
+.ledger-row-negative {
+    color: #dc2626;
+    font-weight: 600;
+}
+
+.ledger-row-balance {
+    color: #15803d;
+    font-weight: 700;
+}
+
+/* ============================================================
+   Warning Banner
+   ============================================================ */
+.warning-banner {
+    background: #fffbeb;
+    border: 1px solid #fcd34d;
+    border-left: 4px solid #f59e0b;
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.875rem;
+}
+
+/* ============================================================
+   Empty States
+   ============================================================ */
+.empty-state {
+    padding: 3rem 1rem;
+    text-align: center;
+    color: #94a3b8;
+    font-size: 0.85rem;
+}
+
+.empty-state i {
+    font-size: 2rem;
+    margin-bottom: 0.75rem;
+    display: block;
+    opacity: 0.4;
+}
+
+/* ============================================================
+   Breadcrumbs
+   ============================================================ */
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    color: #64748b;
+}
+
+.breadcrumb a {
+    color: #64748b;
+    text-decoration: none;
+}
+
+.breadcrumb a:hover {
+    color: #15803d;
+}
+
+.breadcrumb span {
+    color: #0f172a;
+    font-weight: 600;
+}
+
+/* ============================================================
+   Form Sections
+   ============================================================ */
+.form-section {
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 1.25rem;
+    margin-bottom: 1.25rem;
+}
+
+.form-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.form-section-title {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    margin-bottom: 0.75rem;
+}
+
+/* ============================================================
+   Stat Dividers
+   ============================================================ */
+.stat-divider {
+    border-right: 1px solid #e2e8f0;
+}
+
+.stat-divider:last-child {
+    border-right: none;
+}
