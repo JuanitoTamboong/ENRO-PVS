@@ -198,14 +198,14 @@ function handleLogout() {
                         class="w-8 h-8 flex items-center justify-center text-enro-400 hover:text-white hover:bg-enro-800 rounded-lg transition">
                         <i class="fa-solid fa-arrow-right-from-bracket text-xs"></i>
                     </button>
-                    <button onclick="toggleMobileMenu()" class="md:hidden w-8 h-8 flex items-center justify-center text-enro-300 hover:bg-enro-800 rounded-lg">
+                    <button id="mobile-menu-toggle" type="button" onclick="toggleMobileMenu()" aria-controls="mobile-menu" aria-expanded="false" class="md:hidden w-8 h-8 flex items-center justify-center text-enro-300 hover:bg-enro-800 rounded-lg transition">
                         <i class="fa-solid fa-bars text-sm"></i>
                     </button>
                 </div>
             </div>
         </div>
 
-        <div id="mobile-menu" class="hidden md:hidden bg-enro-950 border-t border-enro-900 px-4 py-3 space-y-1">
+        <div id="mobile-menu" class="mobile-menu md:hidden bg-enro-950 border-t border-enro-900 px-4 py-3 space-y-1">
             <a href="./dashboard.html" class="block w-full text-left px-3 py-2 text-sm font-semibold text-enro-100 hover:bg-enro-800 rounded-lg">Dashboard</a>
             <a href="./directory.html" class="block w-full text-left px-3 py-2 text-sm font-semibold text-enro-100 hover:bg-enro-800 rounded-lg">Directory</a>
             <a href="./annual-volume.html" class="block w-full text-left px-3 py-2 text-sm font-semibold text-enro-100 hover:bg-enro-800 rounded-lg">Annual Volume</a>
@@ -214,7 +214,14 @@ function handleLogout() {
 })();
 
 function toggleMobileMenu() {
-    document.getElementById('mobile-menu').classList.toggle('hidden');
+    const menu = document.getElementById('mobile-menu');
+    const toggle = document.getElementById('mobile-menu-toggle');
+    const isOpen = menu.classList.toggle('is-open');
+
+    toggle.setAttribute('aria-expanded', String(isOpen));
+    toggle.querySelector('i').className = isOpen
+        ? 'fa-solid fa-xmark text-sm'
+        : 'fa-solid fa-bars text-sm';
 }
 
 // ============================================================
