@@ -124,47 +124,69 @@ function handleExcelImport(event) {
         try {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: 'array' });
-            const firstSheetName = workbook.SheetNames[0];
-            const worksheet = workbook.Sheets[firstSheetName];
-            const jsonRows = XLSX.utils.sheet_to_json(worksheet);
+            
+            let allImportedRows = [];
 
-            if (jsonRows.length === 0) {
-                showToast('The imported Excel file is empty.', 'error');
+            // Loop through ALL sheets in the workbook
+            workbook.SheetNames.forEach(sheetName => {
+                const worksheet = workbook.Sheets[sheetName];
+                const jsonRows = XLSX.utils.sheet_to_json(worksheet);
+
+                jsonRows.forEach((row, index) => {
+                    const name = String(
+                        row['PERMIT HOLDER'] || row['Permit Holder'] || row['name'] || ''
+                    ).trim().toUpperCase();
+
+                    if (!name) return; // Skip empty rows
+
+                    const mun = String(row['MUNICIPALITY'] || row['Municipality'] || '').trim();
+                    const loc = String(row['LOCATION'] || row['Location'] || row['location'] || '').trim();
+                    const fullLocation = mun && loc ? `${mun} - ${loc}` : (mun || loc || 'Unknown Location');
+
+                    const permitNo = String(
+                        row['PERMIT NO.'] || row['Permit No.'] || row['ECC no.'] || row['ECC'] || row['permitNo'] || `ROM-${index}-26`
+                    ).trim();
+
+                    const rawVolStr = String(
+                        row['ALLOWED VOLUME (CU.M)'] || 
+                        row['Allowed Volume (Cu.M)'] || 
+                        row['ANNUAL EXTRACTION RATE'] || 
+                        row['Annual Extraction Rate'] || 
+                        row['allowedVol'] || '0'
+                    );
+                    const numericVol = parseFloat(rawVolStr.replace(/[^0-9.-]+/g, "")) || 0;
+
+                    allImportedRows.push({
+                        id: permitteesData.length + allImportedRows.length + 1,
+                        name: name,
+                        location: fullLocation,
+                        permitNo: permitNo,
+                        type: String(row['TYPE OF PERMIT'] || row['Type of Permit'] || row['type'] || 'Commercial').trim(),
+                        commodity: String(row['COMMODITY'] || row['Commodity'] || row['commodity'] || 'Sand & Gravel').trim(),
+                        rate: rawVolStr,
+                        allowedVol: numericVol,
+                        remainingVol: numericVol,
+                        startDate: String(row['ISSUED DATE'] || row['START DATE'] || row['Start Date'] || row['startDate'] || '').trim(),
+                        endDate: String(row['END DATE'] || row['End Date'] || row['endDate'] || '').trim(),
+                        status: String(row['AREA STATUS CLEARANCE'] || row['STATUS'] || row['Status'] || row['status'] || 'Active').trim(),
+                        transactions: []
+                    });
+                });
+            });
+
+            if (allImportedRows.length === 0) {
+                showToast('No valid permittee records found across sheets.', 'error');
                 return;
             }
 
-            const importedPermittees = jsonRows.map((row, index) => {
-                const allowed = parseFloat(
-                    row['ALLOWED VOLUME (CU.M)'] || 
-                    row['Allowed Volume (Cu.M)'] || 
-                    row['allowedVol'] || 0
-                );
-
-                return {
-                    id: permitteesData.length + index + 1,
-                    name: String(row['PERMIT HOLDER'] || row['Permit Holder'] || row['name'] || 'Unknown').trim().toUpperCase(),
-                    location: String(row['LOCATION'] || row['Location'] || row['location'] || '').trim(),
-                    permitNo: String(row['PERMIT NO.'] || row['Permit No.'] || row['permitNo'] || `ROM# 00${index}-26`).trim(),
-                    type: String(row['TYPE OF PERMIT'] || row['Type of Permit'] || row['type'] || 'Commercial').trim(),
-                    commodity: String(row['COMMODITY'] || row['Commodity'] || row['commodity'] || 'Sand & Gravel').trim(),
-                    rate: String(row['ANNUAL EXTRACTION RATE'] || row['Annual Extraction Rate'] || row['rate'] || '').trim(),
-                    allowedVol: allowed,
-                    remainingVol: allowed,
-                    startDate: row['START DATE'] || row['Start Date'] || row['startDate'] || '',
-                    endDate: row['END DATE'] || row['End Date'] || row['endDate'] || '',
-                    status: String(row['STATUS'] || row['Status'] || row['status'] || 'Active').trim(),
-                    transactions: []
-                };
-            });
-
-            permitteesData = permitteesData.concat(importedPermittees);
+            permitteesData = permitteesData.concat(allImportedRows);
             savePermittees(permitteesData);
             renderDirectoryTable(permitteesData);
             
-            showToast(`Successfully imported ${importedPermittees.length} records from Excel.`, 'success');
+            showToast(`Successfully imported ${allImportedRows.length} records from all sheets.`, 'success');
         } catch (error) {
             console.error(error);
-            showToast('Failed to parse Excel file. Please check column headers.', 'error');
+            showToast('Failed to parse Excel file. Please check structure.', 'error');
         } finally {
             event.target.value = '';
         }
