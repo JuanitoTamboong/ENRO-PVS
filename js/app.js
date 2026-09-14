@@ -98,40 +98,57 @@ let permitteesData = loadPermittees();
 // ============================================================
 // AUTH
 // ============================================================
-let currentLoginRole = sessionStorage.getItem('enro_role') || 'admin';
+let currentLoginRole = 'admin';
 
-function toggleLoginMode(mode) {
-    currentLoginRole = mode;
-    const btnAdmin = document.getElementById('tab-login-admin');
-    const btnUser = document.getElementById('tab-login-user');
-    const lblUser = document.getElementById('lbl-username');
-    const btnText = document.getElementById('btn-login-text');
+function normalizeLoginRole(role) {
+    return role?.toString().toLowerCase().replace(/[\s-]+/g, '_');
+}
 
-    if (mode === 'admin') {
-        btnAdmin.className = "flex-1 py-3.5 text-xs font-bold text-enro-700 border-b-2 border-enro-700 bg-white transition";
-        btnUser.className = "flex-1 py-3.5 text-xs font-bold text-ink-400 border-b-2 border-transparent hover:text-ink-600 transition";
-        lblUser.innerText = "Username";
-        btnText.innerText = "Sign in as Admin";
-        document.getElementById('username').value = "admin";
-    } else {
-        btnUser.className = "flex-1 py-3.5 text-xs font-bold text-enro-700 border-b-2 border-enro-700 bg-white transition";
-        btnAdmin.className = "flex-1 py-3.5 text-xs font-bold text-ink-400 border-b-2 border-transparent hover:text-ink-600 transition";
-        lblUser.innerText = "Staff ID";
-        btnText.innerText = "Sign in as Staff";
-        document.getElementById('username').value = "user";
+function getAccountRole(user) {
+    return normalizeLoginRole(user?.app_metadata?.role || user?.user_metadata?.role);
+}
+
+function selectLoginRole(role) {
+    currentLoginRole = role;
+    document.querySelectorAll('.login-role-option').forEach((option) => {
+        option.classList.toggle('is-selected', option.dataset.role === role);
+    });
+    document.getElementById('btn-login-text').innerText =
+        role === 'admin' ? 'Continue as Admin' : 'Continue as Admin Staff';
+}
+
+async function handleLogin(e) {
+    e.preventDefault();
+    const error = document.getElementById('login-error');
+    const button = e.target.querySelector('button[type="submit"]');
+    error.classList.add('hidden');
+    button.disabled = true;
+
+    try {
+        const { error: authError } = await supabaseClient.auth.signInWithPassword({
+            email: document.getElementById('email').value.trim(),
+            password: document.getElementById('password').value
+        });
+
+        if (authError) throw authError;
+
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        const accountRole = getAccountRole(user);
+        if (accountRole && accountRole !== currentLoginRole) {
+            await supabaseClient.auth.signOut();
+            throw new Error(`This account is not registered as ${currentLoginRole === 'admin' ? 'an Admin' : 'Admin Staff'}.`);
+        }
+
+        window.location.href = './pages/dashboard.html';
+    } catch (authError) {
+        error.innerText = authError.message || 'Unable to sign in. Please try again.';
+        error.classList.remove('hidden');
+        button.disabled = false;
     }
 }
 
-function handleLogin(e) {
-    e.preventDefault();
-    sessionStorage.setItem('enro_logged_in', '1');
-    sessionStorage.setItem('enro_role', currentLoginRole);
-    window.location.href = './pages/dashboard.html';
-}
-
-function handleLogout() {
-    sessionStorage.removeItem('enro_logged_in');
-    sessionStorage.removeItem('enro_role');
+async function handleLogout() {
+    await supabaseClient.auth.signOut();
     window.location.href = '../index.html';
 }
 
@@ -139,18 +156,22 @@ function handleLogout() {
 // AUTH GUARD + HEADER INJECTION
 // (runs on every pages/*.html file)
 // ============================================================
-(function initShell() {
+async function initShell() {
     const headerMount = document.getElementById('app-header');
     if (!headerMount) return;   // We're on index.html — skip
 
     // --- Guard ---
-    if (sessionStorage.getItem('enro_logged_in') !== '1') {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) {
         window.location.href = '../index.html';
         return;
     }
-    const role = sessionStorage.getItem('enro_role') || 'admin';
-    const roleLabel = role === 'admin' ? 'Admin Officer' : 'Field Staff';
-    const roleBadge = role === 'admin' ? 'AD' : 'ST';
+    const userEmail = session.user.email || 'Authenticated user';
+    const sessionRole = getAccountRole(session.user);
+    const roleLabel = sessionRole === 'admin_staff'
+        ? 'Admin Staff'
+        : sessionRole === 'admin' ? 'Admin' : userEmail;
+    const roleBadge = roleLabel.slice(0, 2).toUpperCase();
 
     // --- Determine active tab from filename ---
     const file = window.location.pathname.split('/').pop();
@@ -211,7 +232,9 @@ function handleLogout() {
             <a href="./annual-volume.html" class="block w-full text-left px-3 py-2 text-sm font-semibold text-enro-100 hover:bg-enro-800 rounded-lg">Annual Volume</a>
         </div>
     </header>`;
-})();
+}
+
+initShell();
 
 function toggleMobileMenu() {
     const menu = document.getElementById('mobile-menu');

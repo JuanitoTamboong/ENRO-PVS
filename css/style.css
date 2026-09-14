@@ -12,6 +12,341 @@ html {
     background: #f8fafc;
 }
 
+/* ============================================================
+   Login
+   ============================================================ */
+.login-shell {
+    position: relative;
+    overflow: hidden;
+    background: #dce9e1;
+    background-image: radial-gradient(#b7cec0 0.7px, transparent 0.7px);
+    background-size: 16px 16px;
+}
+
+.login-layout {
+    position: relative;
+    display: grid;
+    width: 100%;
+    grid-template-rows: auto 1fr auto;
+    max-width: 68rem;
+    min-height: 650px;
+    background: #fbfcf9;
+    border: 1px solid rgba(5, 46, 22, 0.12);
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 28px 80px rgba(5, 46, 22, 0.16);
+}
+
+.login-masthead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 1.75rem;
+    border-bottom: 1px solid #d8e3dc;
+    background: #fbfcf9;
+}
+
+.login-brand-lockup,
+.login-secure-label,
+.login-stat-line {
+    display: flex;
+    align-items: center;
+}
+
+.login-brand-lockup {
+    gap: 0.75rem;
+}
+
+.login-mark {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    background: #f0fdf4;
+    border: 1px solid #b7dfc5;
+    border-radius: 9px;
+}
+
+.login-brand-name {
+    margin-top: 0.15rem;
+    color: #0f172a;
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+}
+
+.login-brand-name span {
+    color: #15803d;
+}
+
+.login-secure-label {
+    gap: 0.45rem;
+    color: #15803d;
+    font-size: 0.67rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.login-kicker {
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+
+.login-intro h1 {
+    max-width: 28rem;
+    margin-top: 1rem;
+    color: #0f172a;
+    font-size: clamp(2.8rem, 5vw, 4.8rem);
+    line-height: 0.95;
+    letter-spacing: -0.06em;
+}
+
+.login-intro h1 em {
+    color: #15803d;
+    font-style: normal;
+}
+
+.login-intro-copy {
+    max-width: 26rem;
+    margin-top: 1.5rem;
+    color: #64748b;
+    font-size: 0.88rem;
+    line-height: 1.65;
+}
+
+.login-content {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(25rem, 0.9fr);
+    gap: 3rem;
+    padding: 4rem 5rem 3.5rem;
+}
+
+.login-stat-line {
+    gap: 1.25rem;
+    margin-top: 4rem;
+    color: #15803d;
+}
+
+.login-stat-line span:not(.login-stat-dot) {
+    display: grid;
+    gap: 0.2rem;
+}
+
+.login-stat-line strong {
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+}
+
+.login-stat-line small {
+    color: #64748b;
+    font-size: 0.62rem;
+}
+
+.login-stat-dot {
+    width: 5px;
+    height: 5px;
+    background: #22c55e;
+    border-radius: 50%;
+}
+
+.login-panel {
+    align-self: center;
+    padding: 2rem;
+    background: #f1f7f2;
+    border: 1px solid #d8e8dc;
+    border-radius: 12px;
+}
+
+.login-panel-heading h2 {
+    margin-top: 0.5rem;
+    color: #0f172a;
+    font-size: 1.55rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+}
+
+.login-panel-heading p:last-child {
+    margin-top: 0.4rem;
+    color: #64748b;
+    font-size: 0.8rem;
+}
+
+.login-role-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem;
+    margin: 1.5rem 0;
+}
+
+.login-role-option {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 8.4rem;
+    padding: 1rem 0.6rem 0.8rem;
+    color: #334155;
+    text-align: center;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.login-role-option:hover,
+.login-role-option.is-selected {
+    background: #f0fdf4;
+    border-color: #22c55e;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+}
+
+.login-role-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    color: #15803d;
+    background: white;
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+}
+
+.login-role-option strong,
+.login-role-option small {
+    display: block;
+}
+
+.login-role-option strong {
+    color: #0f172a;
+    font-size: 0.78rem;
+}
+
+.login-role-option small {
+    margin-top: 0.15rem;
+    color: #64748b;
+    font-size: 0.68rem;
+}
+
+.login-role-check {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.6rem;
+    color: #16a34a;
+    opacity: 0;
+}
+
+.login-role-option.is-selected .login-role-check {
+    opacity: 1;
+}
+
+.login-submit:disabled {
+    opacity: 0.65;
+    cursor: wait;
+}
+
+.login-card-footer {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.9rem 1.75rem;
+    color: #64748b;
+    font-size: 0.63rem;
+    border-top: 1px solid #d8e3dc;
+}
+
+@media (max-width: 1023px) {
+    .login-shell {
+        flex-direction: column;
+    }
+
+    .login-layout {
+        width: min(32rem, calc(100vw - 2rem));
+        flex-shrink: 0;
+        min-width: 0;
+        min-height: 0;
+        max-width: 32rem;
+    }
+
+    .login-content {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+        padding: 2.5rem;
+    }
+
+    .login-intro h1 {
+        max-width: none;
+        font-size: 3.2rem;
+    }
+
+    .login-stat-line {
+        margin-top: 2rem;
+    }
+
+    .login-panel {
+        padding: 1.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .login-shell {
+        padding: 1rem;
+    }
+
+    .login-masthead {
+        padding: 1rem;
+    }
+
+    .login-secure-label span {
+        display: none;
+    }
+
+    .login-content {
+        gap: 1.5rem;
+        padding: 2rem 1rem 1.5rem;
+    }
+
+    .login-intro h1 {
+        font-size: 2.65rem;
+    }
+
+    .login-intro-copy {
+        margin-top: 1rem;
+    }
+
+    .login-stat-line {
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+    }
+
+    .login-panel {
+        padding: 1.5rem;
+    }
+
+    .login-role-grid {
+        gap: 0.5rem;
+    }
+
+    .login-role-option {
+        min-height: 7.8rem;
+    }
+
+    .login-card-footer {
+        display: block;
+        padding: 0.8rem 1rem;
+        line-height: 1.5;
+        text-align: center;
+    }
+
+    .login-card-footer span {
+        display: block;
+    }
+}
+
 @view-transition {
     navigation: auto;
 }

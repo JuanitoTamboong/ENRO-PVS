@@ -11,47 +11,68 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./css/style.css">
 </head>
-<body class="h-full bg-ink-50 font-sans text-ink-800">
+<body class="login-page h-full bg-ink-50 font-sans text-ink-800">
 
-<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-enro-950 via-enro-900 to-ink-900 p-4">
-    <div class="w-full max-w-sm">
-        <!-- Logo -->
-        <div class="text-center mb-8">
-            <div class="w-14 h-14 bg-white/10 backdrop-blur rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/20">
-                <img src="./assets/enro-logo.png" alt="ENRO logo" class="w-12 h-12 object-contain">
-            </div>
-            <h1 class="text-white font-bold text-lg tracking-tight">ENRO Portal</h1>
-            <p class="text-enro-300/70 text-xs mt-1">Permit & Extraction Volume Monitoring</p>
-        </div>
-
-        <!-- Login Card -->
-        <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
-            <!-- Role Toggle -->
-            <div class="flex border-b border-ink-100">
-                <button type="button" id="tab-login-admin" onclick="toggleLoginMode('admin')"
-                    class="flex-1 py-3.5 text-xs font-bold text-enro-700 border-b-2 border-enro-700 bg-white transition">
-                    <i class="fa-solid fa-user-shield mr-1.5"></i>Admin
-                </button>
-                <button type="button" id="tab-login-user" onclick="toggleLoginMode('user')"
-                    class="flex-1 py-3.5 text-xs font-bold text-ink-400 border-b-2 border-transparent hover:text-ink-600 transition">
-                    <i class="fa-solid fa-user mr-1.5"></i>Staff
-                </button>
-            </div>
-
-            <!-- Login Form -->
-            <form id="login-form" onsubmit="handleLogin(event)" class="p-6 space-y-5">
+<div class="login-shell min-h-screen flex items-center justify-center p-4 sm:p-8">
+    <div class="login-layout w-full max-w-5xl">
+        <header class="login-masthead">
+            <div class="login-brand-lockup">
+                <div class="login-mark">
+                    <img src="./assets/enro-logo.png" alt="ENRO logo" class="w-10 h-10 object-contain">
+                </div>
                 <div>
-                    <label id="lbl-username" class="block text-[11px] font-bold text-ink-500 uppercase tracking-wider mb-1.5">Username</label>
+                    <p class="login-kicker">Provincial Government</p>
+                    <p class="login-brand-name">ENRO <span>Portal</span></p>
+                </div>
+            </div>
+            <div class="login-secure-label"><i class="fa-solid fa-shield-halved"></i><span>Secure access</span></div>
+        </header>
+
+        <div class="login-content">
+            <section class="login-intro">
+                <p class="login-kicker">Operations desk / 01</p>
+                <h1>Keep every<br><em>load accountable.</em></h1>
+                <p class="login-intro-copy">Monitor permit records, extraction limits, and field activity from one controlled workspace.</p>
+                <div class="login-stat-line">
+                    <span><strong>ENRO</strong><small>Environment & Natural Resources Office</small></span>
+                    <span class="login-stat-dot"></span>
+                    <span><strong>2026</strong><small>Permit volume monitoring</small></span>
+                </div>
+            </section>
+
+            <section class="login-panel">
+                <div class="login-panel-heading">
+                    <p class="login-kicker text-enro-700">Sign in</p>
+                    <h2>Choose your workspace</h2>
+                    <p>Use the account assigned to your access type.</p>
+                </div>
+
+                <div class="login-role-grid" role="group" aria-label="Access type">
+                <button type="button" class="login-role-option is-selected" data-role="admin" onclick="selectLoginRole('admin')">
+                    <span class="login-role-icon"><i class="fa-solid fa-user-shield"></i></span>
+                    <span><strong>Admin</strong><small>Manage portal operations</small></span>
+                    <i class="fa-solid fa-circle-check login-role-check"></i>
+                </button>
+                <button type="button" class="login-role-option" data-role="admin_staff" onclick="selectLoginRole('admin_staff')">
+                    <span class="login-role-icon"><i class="fa-solid fa-clipboard-user"></i></span>
+                    <span><strong>Admin Staff</strong><small>Record and monitor permits</small></span>
+                    <i class="fa-solid fa-circle-check login-role-check"></i>
+                </button>
+                </div>
+
+                <form id="login-form" onsubmit="handleLogin(event)" class="login-form space-y-5">
+                <div>
+                    <label class="block text-[11px] font-bold text-ink-500 uppercase tracking-wider mb-1.5">Email</label>
                     <div class="relative">
-                        <i class="fa-solid fa-user absolute left-3 top-1/2 -translate-y-1/2 text-ink-300 text-xs"></i>
-                        <input type="text" id="username" required value="admin" class="input-field pl-9" placeholder="Enter username">
+                        <i class="fa-solid fa-envelope absolute left-3 top-1/2 -translate-y-1/2 text-ink-300 text-xs"></i>
+                        <input type="email" id="email" required class="input-field pl-9" placeholder="name@example.com" autocomplete="email">
                     </div>
                 </div>
                 <div>
                     <label class="block text-[11px] font-bold text-ink-500 uppercase tracking-wider mb-1.5">Password</label>
                     <div class="relative">
                         <i class="fa-solid fa-lock absolute left-3 top-1/2 -translate-y-1/2 text-ink-300 text-xs"></i>
-                        <input type="password" id="password" required value="admin123" class="input-field pl-9" placeholder="••••••••">
+                        <input type="password" id="password" required class="input-field pl-9" placeholder="Enter your password" autocomplete="current-password">
                     </div>
                 </div>
 
@@ -63,20 +84,17 @@
                     <a href="#" onclick="showToast('Contact ENRO IT administrator for password reset.','info')" class="text-enro-600 hover:underline font-semibold">Forgot?</a>
                 </div>
 
-                <button type="submit" class="btn-primary w-full justify-center py-3">
-                    <span id="btn-login-text">Sign in as Admin</span>
+                <button type="submit" class="btn-primary login-submit w-full justify-center py-3">
+                    <span id="btn-login-text">Continue as Admin</span>
                     <i class="fa-solid fa-arrow-right text-xs"></i>
                 </button>
 
-                <p class="text-center text-[11px] text-ink-400 pt-1">
-                    Demo: <span class="font-mono text-ink-600">admin / admin123</span>
-                </p>
-            </form>
+                <p id="login-error" class="hidden text-center text-[11px] text-rose-600 pt-1"></p>
+                </form>
+            </section>
         </div>
 
-        <p class="text-center text-[10px] text-enro-300/50 mt-6">
-            © 2026 Provincial Government • ENRO Office
-        </p>
+        <footer class="login-card-footer"><span>ENRO Permit & Extraction Volume Monitoring</span><span>© 2026 Provincial Government</span></footer>
     </div>
 </div>
 
@@ -91,12 +109,13 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./supabase/supabase-client.js"></script>
 <script src="./js/app.js"></script>
 <script>
-    // If already logged in, skip login page and go to dashboard
-    if (sessionStorage.getItem('enro_logged_in') === '1') {
-        window.location.href = './pages/dashboard.html';
-    }
+    supabaseClient.auth.getSession().then(({ data: { session } }) => {
+        if (session) window.location.href = './pages/dashboard.html';
+    });
 </script>
 </body>
 </html>
