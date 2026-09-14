@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ENRO • Sign In</title>
-    
-    <!-- Paths are relative to root, so no "../" needed -->
+
+    <!-- Paths are relative to root -->
     <link rel="stylesheet" href="./css/tailwind.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -25,7 +25,9 @@
                     <p class="login-brand-name">ENRO <span>Portal</span></p>
                 </div>
             </div>
-            <div class="login-secure-label"><i class="fa-solid fa-shield-halved"></i><span>Secure access</span></div>
+            <div class="login-secure-label">
+                <i class="fa-solid fa-shield-halved"></i><span>Secure access</span>
+            </div>
         </header>
 
         <div class="login-content">
@@ -34,7 +36,7 @@
                 <h1>Keep every<br><em>load accountable.</em></h1>
                 <p class="login-intro-copy">Monitor permit records, extraction limits, and field activity from one controlled workspace.</p>
                 <div class="login-stat-line">
-                    <span><strong>ENRO</strong><small>Environment & Natural Resources Office</small></span>
+                    <span><strong>ENRO</strong><small>Environment &amp; Natural Resources Office</small></span>
                     <span class="login-stat-dot"></span>
                     <span><strong>2026</strong><small>Permit volume monitoring</small></span>
                 </div>
@@ -48,53 +50,56 @@
                 </div>
 
                 <div class="login-role-grid" role="group" aria-label="Access type">
-                <button type="button" class="login-role-option is-selected" data-role="admin" onclick="selectLoginRole('admin')">
-                    <span class="login-role-icon"><i class="fa-solid fa-user-shield"></i></span>
-                    <span><strong>Admin</strong><small>Manage portal operations</small></span>
-                    <i class="fa-solid fa-circle-check login-role-check"></i>
-                </button>
-                <button type="button" class="login-role-option" data-role="admin_staff" onclick="selectLoginRole('admin_staff')">
-                    <span class="login-role-icon"><i class="fa-solid fa-clipboard-user"></i></span>
-                    <span><strong>Admin Staff</strong><small>Record and monitor permits</small></span>
-                    <i class="fa-solid fa-circle-check login-role-check"></i>
-                </button>
+                    <button type="button" class="login-role-option is-selected" data-role="admin" onclick="selectLoginRole('admin')">
+                        <span class="login-role-icon"><i class="fa-solid fa-user-shield"></i></span>
+                        <span><strong>Admin</strong><small>Manage portal operations</small></span>
+                        <i class="fa-solid fa-circle-check login-role-check"></i>
+                    </button>
+                    <button type="button" class="login-role-option" data-role="admin_staff" onclick="selectLoginRole('admin_staff')">
+                        <span class="login-role-icon"><i class="fa-solid fa-clipboard-user"></i></span>
+                        <span><strong>Admin Staff</strong><small>Record and monitor permits</small></span>
+                        <i class="fa-solid fa-circle-check login-role-check"></i>
+                    </button>
                 </div>
 
                 <form id="login-form" onsubmit="handleLogin(event)" class="login-form space-y-5">
-                <div>
-                    <label class="block text-[11px] font-bold text-ink-500 uppercase tracking-wider mb-1.5">Email</label>
-                    <div class="relative">
-                        <i class="fa-solid fa-envelope absolute left-3 top-1/2 -translate-y-1/2 text-ink-300 text-xs"></i>
-                        <input type="email" id="email" required class="input-field pl-9" placeholder="name@example.com" autocomplete="email">
+                    <div>
+                        <label class="block text-[11px] font-bold text-ink-500 uppercase tracking-wider mb-1.5">Email</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-envelope absolute left-3 top-1/2 -translate-y-1/2 text-ink-300 text-xs"></i>
+                            <input type="email" id="email" required class="input-field pl-9" placeholder="name@example.com" autocomplete="email">
+                        </div>
                     </div>
-                </div>
-                <div>
-                    <label class="block text-[11px] font-bold text-ink-500 uppercase tracking-wider mb-1.5">Password</label>
-                    <div class="relative">
-                        <i class="fa-solid fa-lock absolute left-3 top-1/2 -translate-y-1/2 text-ink-300 text-xs"></i>
-                        <input type="password" id="password" required class="input-field pl-9" placeholder="Enter your password" autocomplete="current-password">
+                    <div>
+                        <label class="block text-[11px] font-bold text-ink-500 uppercase tracking-wider mb-1.5">Password</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-lock absolute left-3 top-1/2 -translate-y-1/2 text-ink-300 text-xs"></i>
+                            <input type="password" id="password" required class="input-field pl-9" placeholder="Enter your password" autocomplete="current-password">
+                        </div>
                     </div>
-                </div>
 
-                <div class="flex items-center justify-between text-xs">
-                    <label class="flex items-center gap-2 text-ink-500 cursor-pointer">
-                        <input type="checkbox" checked class="rounded border-ink-300 text-enro-600 focus:ring-enro-500 h-3.5 w-3.5">
-                        <span>Remember me</span>
-                    </label>
-                    <a href="#" onclick="showToast('Contact ENRO IT administrator for password reset.','info')" class="text-enro-600 hover:underline font-semibold">Forgot?</a>
-                </div>
+                    <div class="flex items-center justify-between text-xs">
+                        <label class="flex items-center gap-2 text-ink-500 cursor-pointer">
+                            <input type="checkbox" checked class="rounded border-ink-300 text-enro-600 focus:ring-enro-500 h-3.5 w-3.5">
+                            <span>Remember me</span>
+                        </label>
+                        <a href="#" onclick="showToast('Contact ENRO IT administrator for password reset.','info')" class="text-enro-600 hover:underline font-semibold">Forgot?</a>
+                    </div>
 
-                <button type="submit" class="btn-primary login-submit w-full justify-center py-3">
-                    <span id="btn-login-text">Continue as Admin</span>
-                    <i class="fa-solid fa-arrow-right text-xs"></i>
-                </button>
+                    <button type="submit" class="btn-primary login-submit w-full justify-center py-3">
+                        <span id="btn-login-text">Continue as Admin</span>
+                        <i class="fa-solid fa-arrow-right text-xs"></i>
+                    </button>
 
-                <p id="login-error" class="hidden text-center text-[11px] text-rose-600 pt-1"></p>
+                    <p id="login-error" class="hidden text-center text-[11px] text-rose-600 pt-1"></p>
                 </form>
             </section>
         </div>
 
-        <footer class="login-card-footer"><span>ENRO Permit & Extraction Volume Monitoring</span><span>© 2026 Provincial Government</span></footer>
+        <footer class="login-card-footer">
+            <span>ENRO Permit &amp; Extraction Volume Monitoring</span>
+            <span>© 2026 Provincial Government</span>
+        </footer>
     </div>
 </div>
 
@@ -112,10 +117,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./supabase/supabase-client.js"></script>
 <script src="./js/app.js"></script>
-<script>
-    supabaseClient.auth.getSession().then(({ data: { session } }) => {
-        if (session) window.location.href = './pages/dashboard.html';
-    });
-</script>
+<script src="./js/login.js"></script>
 </body>
 </html>

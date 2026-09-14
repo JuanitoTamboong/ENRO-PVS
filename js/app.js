@@ -96,55 +96,14 @@ function savePermittees(data) {
 let permitteesData = loadPermittees();
 
 // ============================================================
-// AUTH
+// AUTH HELPERS
 // ============================================================
-let currentLoginRole = 'admin';
-
 function normalizeLoginRole(role) {
     return role?.toString().toLowerCase().replace(/[\s-]+/g, '_');
 }
 
 function getAccountRole(user) {
     return normalizeLoginRole(user?.app_metadata?.role || user?.user_metadata?.role);
-}
-
-function selectLoginRole(role) {
-    currentLoginRole = role;
-    document.querySelectorAll('.login-role-option').forEach((option) => {
-        option.classList.toggle('is-selected', option.dataset.role === role);
-    });
-    document.getElementById('btn-login-text').innerText =
-        role === 'admin' ? 'Continue as Admin' : 'Continue as Admin Staff';
-}
-
-async function handleLogin(e) {
-    e.preventDefault();
-    const error = document.getElementById('login-error');
-    const button = e.target.querySelector('button[type="submit"]');
-    error.classList.add('hidden');
-    button.disabled = true;
-
-    try {
-        const { error: authError } = await supabaseClient.auth.signInWithPassword({
-            email: document.getElementById('email').value.trim(),
-            password: document.getElementById('password').value
-        });
-
-        if (authError) throw authError;
-
-        const { data: { user } } = await supabaseClient.auth.getUser();
-        const accountRole = getAccountRole(user);
-        if (accountRole && accountRole !== currentLoginRole) {
-            await supabaseClient.auth.signOut();
-            throw new Error(`This account is not registered as ${currentLoginRole === 'admin' ? 'an Admin' : 'Admin Staff'}.`);
-        }
-
-        window.location.href = './pages/dashboard.html';
-    } catch (authError) {
-        error.innerText = authError.message || 'Unable to sign in. Please try again.';
-        error.classList.remove('hidden');
-        button.disabled = false;
-    }
 }
 
 async function handleLogout() {
@@ -166,6 +125,7 @@ async function initShell() {
         window.location.href = '../index.html';
         return;
     }
+
     const userEmail = session.user.email || 'Authenticated user';
     const sessionRole = getAccountRole(session.user);
     const roleLabel = sessionRole === 'admin_staff'
@@ -273,11 +233,14 @@ function showToast(message, type = 'success') {
     const toast = document.getElementById('toast');
     const icon = document.getElementById('toast-icon');
     if (!toast) return;
+
     document.getElementById('toast-title').innerText = type === 'success' ? 'Success' : 'Information';
     document.getElementById('toast-message').innerText = message;
+
     icon.innerHTML = type === 'success'
         ? '<i class="fa-solid fa-circle-check text-enro-400 text-lg"></i>'
         : '<i class="fa-solid fa-circle-info text-sky-400 text-lg"></i>';
+
     toast.classList.add('show');
     clearTimeout(showToast.timeout);
     showToast.timeout = setTimeout(() => toast.classList.remove('show'), 3500);
