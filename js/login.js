@@ -4,36 +4,44 @@
 
 let currentLoginRole = 'admin'; // 'admin' or 'admin_staff'
 
-// Normalize a role string to snake_case lowercase
 function normalizeLoginRole(role) {
     return role?.toString().toLowerCase().replace(/[\s-]+/g, '_');
 }
 
-// Extract role from Supabase user object (app_metadata or user_metadata)
 function getAccountRole(user) {
     return normalizeLoginRole(user?.app_metadata?.role || user?.user_metadata?.role);
 }
 
-// Handle role selection (Admin / Admin Staff)
+// ------------------------------------------------------------
+// Role toggle (segmented control)
+// ------------------------------------------------------------
 function selectLoginRole(role) {
     currentLoginRole = role;
 
-    document.querySelectorAll('.login-role-option').forEach((option) => {
-        option.classList.toggle('is-selected', option.dataset.role === role);
+    const toggle = document.querySelector('.login-role-toggle');
+    const tabs = document.querySelectorAll('.login-role-tab');
+    const btnText = document.getElementById('btn-login-text');
+
+    tabs.forEach((tab) => {
+        const isActive = tab.dataset.role === role;
+        tab.classList.toggle('is-active', isActive);
+        tab.setAttribute('aria-selected', String(isActive));
     });
 
-    const btnText = document.getElementById('btn-login-text');
+    if (toggle) {
+        toggle.classList.toggle('is-staff', role === 'admin_staff');
+    }
+
     if (btnText) {
         btnText.innerText = role === 'admin'
             ? 'Continue as Admin'
             : 'Continue as Admin Staff';
     }
 
-    // Persist the selected role for other pages
     sessionStorage.setItem('enro_login_role', role);
 }
 
-// Restore previously selected role (if any)
+// Restore saved role on page load
 (function restoreLoginRole() {
     const saved = sessionStorage.getItem('enro_login_role');
     if (saved === 'admin' || saved === 'admin_staff') {
@@ -43,18 +51,35 @@ function selectLoginRole(role) {
     }
 })();
 
-// ============================================================
-// LOGIN HANDLER
-// ============================================================
+// ------------------------------------------------------------
+// Password visibility toggle
+// ------------------------------------------------------------
+function togglePassword() {
+    const input = document.getElementById('password');
+    const btn = document.getElementById('pw-toggle');
+    if (!input || !btn) return;
+
+    const isVisible = input.type === 'text';
+    input.type = isVisible ? 'password' : 'text';
+    btn.innerHTML = isVisible
+        ? '<i class="fa-solid fa-eye"></i>'
+        : '<i class="fa-solid fa-eye-slash"></i>';
+    btn.setAttribute('aria-label', isVisible ? 'Show password' : 'Hide password');
+}
+
+// ------------------------------------------------------------
+// Login handler
+// ------------------------------------------------------------
 async function handleLogin(e) {
     e.preventDefault();
 
     const error = document.getElementById('login-error');
-    const button = e.target.querySelector('button[type="submit"]');
+    const button = document.getElementById('loginSubmit');
     const emailInput = document.getElementById('email');
     const passwordInput = document.getElementById('password');
 
     error.classList.add('hidden');
+    error.innerText = '';
     button.disabled = true;
 
     if (!emailInput.value.trim() || !passwordInput.value) {
@@ -72,7 +97,7 @@ async function handleLogin(e) {
 
         if (authError) throw authError;
 
-        // Verify the account role matches the selected login role
+        // Verify the account's role matches the selected login role
         const { data: { user } } = await supabaseClient.auth.getUser();
         const accountRole = getAccountRole(user);
 
@@ -85,13 +110,9 @@ async function handleLogin(e) {
             );
         }
 
-        // Persist the selected role for the shell
         sessionStorage.setItem('enro_user_role', currentLoginRole);
-
         showToast(
-            `Signed in as ${
-                currentLoginRole === 'admin' ? 'Administrator' : 'Admin Staff'
-            }`,
+            `Signed in as ${currentLoginRole === 'admin' ? 'Administrator' : 'Admin Staff'}`,
             'success'
         );
 
@@ -106,9 +127,9 @@ async function handleLogin(e) {
     }
 }
 
-// ============================================================
-// SESSION CHECK — redirect if already authenticated
-// ============================================================
+// ------------------------------------------------------------
+// Session check — redirect if already authenticated
+// ------------------------------------------------------------
 supabaseClient.auth.getSession().then(({ data: { session } }) => {
     if (session) {
         window.location.href = './pages/dashboard.html';

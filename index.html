@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ENRO • Sign In</title>
 
-    <!-- Paths are relative to root -->
     <link rel="stylesheet" href="./css/tailwind.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -13,93 +12,123 @@
 </head>
 <body class="login-page h-full bg-ink-50 font-sans text-ink-800">
 
-<div class="login-shell min-h-screen flex items-center justify-center p-4 sm:p-8">
-    <div class="login-layout w-full max-w-5xl">
-        <header class="login-masthead">
-            <div class="login-brand-lockup">
-                <div class="login-mark">
+<div class="login-viewport">
+    <!-- Ambient background blobs -->
+    <div class="login-bg" aria-hidden="true">
+        <span class="login-blob login-blob--a"></span>
+        <span class="login-blob login-blob--b"></span>
+        <span class="login-blob login-blob--c"></span>
+        <span class="login-grid"></span>
+    </div>
+
+    <!-- Shell -->
+    <div class="login-shell">
+        <!-- Left brand rail -->
+        <aside class="login-rail">
+            <div class="login-rail-brand">
+                <div class="login-rail-mark">
                     <img src="./assets/enro-logo.png" alt="ENRO logo" class="w-10 h-10 object-contain">
                 </div>
-                <div>
-                    <p class="login-kicker">Provincial Government</p>
-                    <p class="login-brand-name">ENRO <span>Portal</span></p>
+                <div class="login-rail-brand-text">
+                    <p class="login-rail-kicker">Provincial Government</p>
+                    <p class="login-rail-name">ENRO <span>Portal</span></p>
                 </div>
             </div>
-            <div class="login-secure-label">
-                <i class="fa-solid fa-shield-halved"></i><span>Secure access</span>
+
+            <div class="login-rail-copy">
+                <span class="login-rail-tag">
+                    <i class="fa-solid fa-leaf"></i>
+                    Environment &amp; Natural Resources
+                </span>
+                <h1>Permit &amp; extraction<br><em>volume monitoring.</em></h1>
+                <p>One workspace for permits, truckloads, and annual reports — secured for authorized personnel only.</p>
             </div>
-        </header>
 
-        <div class="login-content">
-            <section class="login-intro">
-                <p class="login-kicker">Operations desk / 01</p>
-                <h1>Keep every<br><em>load accountable.</em></h1>
-                <p class="login-intro-copy">Monitor permit records, extraction limits, and field activity from one controlled workspace.</p>
-                <div class="login-stat-line">
-                    <span><strong>ENRO</strong><small>Environment &amp; Natural Resources Office</small></span>
-                    <span class="login-stat-dot"></span>
-                    <span><strong>2026</strong><small>Permit volume monitoring</small></span>
-                </div>
-            </section>
-
-            <section class="login-panel">
-                <div class="login-panel-heading">
-                    <p class="login-kicker text-enro-700">Sign in</p>
-                    <h2>Choose your workspace</h2>
-                    <p>Use the account assigned to your access type.</p>
-                </div>
-
-                <div class="login-role-grid" role="group" aria-label="Access type">
-                    <button type="button" class="login-role-option is-selected" data-role="admin" onclick="selectLoginRole('admin')">
-                        <span class="login-role-icon"><i class="fa-solid fa-user-shield"></i></span>
-                        <span><strong>Admin</strong><small>Manage portal operations</small></span>
-                        <i class="fa-solid fa-circle-check login-role-check"></i>
-                    </button>
-                    <button type="button" class="login-role-option" data-role="admin_staff" onclick="selectLoginRole('admin_staff')">
-                        <span class="login-role-icon"><i class="fa-solid fa-clipboard-user"></i></span>
-                        <span><strong>Admin Staff</strong><small>Record and monitor permits</small></span>
-                        <i class="fa-solid fa-circle-check login-role-check"></i>
-                    </button>
-                </div>
-
-                <form id="login-form" onsubmit="handleLogin(event)" class="login-form space-y-5">
+            <div class="login-rail-stats">
+                <div class="login-rail-stat">
+                    <span class="login-rail-stat-icon"><i class="fa-solid fa-file-shield"></i></span>
                     <div>
-                        <label class="block text-[11px] font-bold text-ink-500 uppercase tracking-wider mb-1.5">Email</label>
-                        <div class="relative">
-                            <i class="fa-solid fa-envelope absolute left-3 top-1/2 -translate-y-1/2 text-ink-300 text-xs"></i>
-                            <input type="email" id="email" required class="input-field pl-9" placeholder="name@example.com" autocomplete="email">
-                        </div>
+                        <strong>Permit registry</strong>
+                        <small>Centralized records</small>
                     </div>
+                </div>
+                <div class="login-rail-stat">
+                    <span class="login-rail-stat-icon"><i class="fa-solid fa-truck-fast"></i></span>
                     <div>
-                        <label class="block text-[11px] font-bold text-ink-500 uppercase tracking-wider mb-1.5">Password</label>
-                        <div class="relative">
-                            <i class="fa-solid fa-lock absolute left-3 top-1/2 -translate-y-1/2 text-ink-300 text-xs"></i>
-                            <input type="password" id="password" required class="input-field pl-9" placeholder="Enter your password" autocomplete="current-password">
-                        </div>
+                        <strong>Load tracking</strong>
+                        <small>Field-verified data</small>
                     </div>
+                </div>
+            </div>
 
-                    <div class="flex items-center justify-between text-xs">
-                        <label class="flex items-center gap-2 text-ink-500 cursor-pointer">
-                            <input type="checkbox" checked class="rounded border-ink-300 text-enro-600 focus:ring-enro-500 h-3.5 w-3.5">
-                            <span>Remember me</span>
-                        </label>
-                        <a href="#" onclick="showToast('Contact ENRO IT administrator for password reset.','info')" class="text-enro-600 hover:underline font-semibold">Forgot?</a>
+            <div class="login-rail-footer">
+                <i class="fa-solid fa-shield-halved"></i>
+                <span>Secure government access</span>
+            </div>
+        </aside>
+
+        <!-- Right auth panel -->
+        <main class="login-panel">
+            <header class="login-panel-head">
+                <p class="login-panel-kicker">Sign in</p>
+                <h2>Welcome back</h2>
+                <p>Select your access type and continue.</p>
+            </header>
+
+            <!-- Segmented role toggle -->
+            <div class="login-role-toggle" role="tablist" aria-label="Access type">
+                <span class="login-role-toggle-thumb" id="roleThumb"></span>
+                <button type="button" role="tab" aria-selected="true" class="login-role-tab is-active" data-role="admin" onclick="selectLoginRole('admin')">
+                    <i class="fa-solid fa-user-shield"></i>
+                    <span>Admin</span>
+                </button>
+                <button type="button" role="tab" aria-selected="false" class="login-role-tab" data-role="admin_staff" onclick="selectLoginRole('admin_staff')">
+                    <i class="fa-solid fa-clipboard-user"></i>
+                    <span>Admin Staff</span>
+                </button>
+            </div>
+
+            <form id="login-form" onsubmit="handleLogin(event)" class="login-form" autocomplete="on">
+                <div class="login-field">
+                    <label for="email">Email</label>
+                    <div class="login-input">
+                        <i class="fa-solid fa-envelope"></i>
+                        <input type="email" id="email" required placeholder="name@example.com" autocomplete="email">
                     </div>
+                </div>
 
-                    <button type="submit" class="btn-primary login-submit w-full justify-center py-3">
-                        <span id="btn-login-text">Continue as Admin</span>
-                        <i class="fa-solid fa-arrow-right text-xs"></i>
-                    </button>
+                <div class="login-field">
+                    <div class="login-field-row">
+                        <label for="password">Password</label>
+                        <a href="#" onclick="showToast('Contact ENRO IT administrator for password reset.','info');return false;">Forgot?</a>
+                    </div>
+                    <div class="login-input">
+                        <i class="fa-solid fa-lock"></i>
+                        <input type="password" id="password" required placeholder="Enter your password" autocomplete="current-password">
+                        <button type="button" class="login-input-toggle" id="pw-toggle" onclick="togglePassword()" aria-label="Show password">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
 
-                    <p id="login-error" class="hidden text-center text-[11px] text-rose-600 pt-1"></p>
-                </form>
-            </section>
-        </div>
+                <label class="login-check">
+                    <input type="checkbox" checked>
+                    <span>Keep me signed in on this device</span>
+                </label>
 
-        <footer class="login-card-footer">
-            <span>ENRO Permit &amp; Extraction Volume Monitoring</span>
-            <span>© 2026 Provincial Government</span>
-        </footer>
+                <button type="submit" class="login-submit" id="loginSubmit">
+                    <span id="btn-login-text">Continue as Admin</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+
+                <p id="login-error" class="login-error hidden"></p>
+            </form>
+
+            <footer class="login-panel-foot">
+                <span><i class="fa-solid fa-lock"></i> Encrypted session</span>
+                <span>© 2026 ENRO</span>
+            </footer>
+        </main>
     </div>
 </div>
 
