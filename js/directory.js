@@ -106,3 +106,96 @@ function submitNewPermitEntry(e) {
     renderDirectoryTable(permitteesData);
     showToast('Permittee record added successfully.', 'success');
 }
+
+// ============================================================
+// EXCEL IMPORT & EXPORT
+// ============================================================
+
+function triggerExcelImport() {
+    document.getElementById('excel-file-input').click();
+}
+
+function handleExcelImport(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            const jsonRows = XLSX.utils.sheet_to_json(worksheet);
+
+            if (jsonRows.length === 0) {
+                showToast('The imported Excel file is empty.', 'error');
+                return;
+            }
+
+            const importedPermittees = jsonRows.map((row, index) => {
+                const allowed = parseFloat(
+                    row['ALLOWED VOLUME (CU.M)'] || 
+                    row['Allowed Volume (Cu.M)'] || 
+                    row['allowedVol'] || 0
+                );
+
+                return {
+                    id: permitteesData.length + index + 1,
+                    name: String(row['PERMIT HOLDER'] || row['Permit Holder'] || row['name'] || 'Unknown').trim().toUpperCase(),
+                    location: String(row['LOCATION'] || row['Location'] || row['location'] || '').trim(),
+                    permitNo: String(row['PERMIT NO.'] || row['Permit No.'] || row['permitNo'] || `ROM# 00${index}-26`).trim(),
+                    type: String(row['TYPE OF PERMIT'] || row['Type of Permit'] || row['type'] || 'Commercial').trim(),
+                    commodity: String(row['COMMODITY'] || row['Commodity'] || row['commodity'] || 'Sand & Gravel').trim(),
+                    rate: String(row['ANNUAL EXTRACTION RATE'] || row['Annual Extraction Rate'] || row['rate'] || '').trim(),
+                    allowedVol: allowed,
+                    remainingVol: allowed,
+                    startDate: row['START DATE'] || row['Start Date'] || row['startDate'] || '',
+                    endDate: row['END DATE'] || row['End Date'] || row['endDate'] || '',
+                    status: String(row['STATUS'] || row['Status'] || row['status'] || 'Active').trim(),
+                    transactions: []
+                };
+            });
+
+            permitteesData = permitteesData.concat(importedPermittees);
+            savePermittees(permitteesData);
+            renderDirectoryTable(permitteesData);
+            
+            showToast(`Successfully imported ${importedPermittees.length} records from Excel.`, 'success');
+        } catch (error) {
+            console.error(error);
+            showToast('Failed to parse Excel file. Please check column headers.', 'error');
+        } finally {
+            event.target.value = '';
+        }
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+function exportToExcel() {
+    if (!permitteesData || permitteesData.length === 0) {
+        showToast('No data available to export.', 'error');
+        return;
+    }
+
+    const exportData = permitteesData.map(p => ({
+        "LOCATION": p.location,
+        "PERMIT HOLDER": p.name,
+        "PERMIT NO.": p.permitNo,
+        "TYPE OF PERMIT": p.type,
+        "COMMODITY": p.commodity,
+        "ANNUAL EXTRACTION RATE": p.rate,
+        "ALLOWED VOLUME (CU.M)": p.allowedVol,
+        "REMAINING VOLUME": p.remainingVol,
+        "START DATE": p.startDate,
+        "END DATE": p.endDate,
+        "STATUS": p.status
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "TABLAS BASIC INFO");
+    
+    XLSX.writeFile(workbook, "Permittees_Directory_Export.xlsx");
+    showToast('Directory successfully exported to Excel.', 'success');
+}

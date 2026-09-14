@@ -1,82 +1,6 @@
 // ============================================================
 // DATA  (shared across all pages via sessionStorage)
 // ============================================================
-const DEFAULT_PERMITTEES = [
-    {
-        id: 1,
-        name: "ALYCHAN FERNANDEZ",
-        location: "Calatrava - Pangangan",
-        permitNo: "ROM # 007-15",
-        type: "Commercial",
-        commodity: "Sand & Gravel",
-        rate: "1,9715 CU.M",
-        allowedVol: 2000.00,
-        remainingVol: 95.00,
-        startDate: "2025-04-11",
-        endDate: "2026-06-04",
-        status: "Active",
-        transactions: [
-            { date: "2025-07-10", drNo: "DR-2025-002", volume: 1905.00, amount: 57150.00, opNo: "OP-8812", truckLoad: "Bulk Load / NAK-992", prevBal: 2000.00, newBal: 95.00 }
-        ]
-    },
-    {
-        id: 2, name: "ROSE MARY SABLIGAN", location: "Alcantara - Colongoso",
-        permitNo: "ROM # 018-25", type: "Commercial", commodity: "Sand & Gravel",
-        rate: "7,998 MT", allowedVol: 2400.00, remainingVol: 2250.00,
-        startDate: "2026-04-14", endDate: "2027-04-14", status: "Active",
-        transactions: [
-            { date: "2026-05-10", drNo: "DR-2026-011", volume: 150.00, amount: 4500.00, opNo: "OP-9011", truckLoad: "2 Trucks / NAK-123", prevBal: 2400.00, newBal: 2250.00 }
-        ]
-    },
-    {
-        id: 3, name: "EDWIN QUSUMBING", location: "Alcantara - Colongoso",
-        permitNo: "ROM # 026-6-25", type: "Commercial", commodity: "Sand & Gravel",
-        rate: "4,976/1,449 MT", allowedVol: 2000.00, remainingVol: 1850.00,
-        startDate: "2025-09-02", endDate: "2026-09-02", status: "Renewal in process",
-        transactions: [
-            { date: "2025-10-15", drNo: "DR-2025-001", volume: 150.00, amount: 4500.00, opNo: "OP-8410", truckLoad: "1 Dump Truck", prevBal: 2000.00, newBal: 1850.00 }
-        ]
-    },
-    {
-        id: 4, name: "ELMAR MARTINEZ", location: "Alcantara - Colongoso",
-        permitNo: "ROM # 017-25", type: "Commercial", commodity: "Sand & Gravel",
-        rate: "10,000 MT", allowedVol: 3600.00, remainingVol: 3200.00,
-        startDate: "2025-05-19", endDate: "2026-05-19", status: "Active",
-        transactions: [
-            { date: "2025-08-12", drNo: "DR-2025-104", volume: 400.00, amount: 12000.00, opNo: "OP-8501", truckLoad: "3 Trucks", prevBal: 3600.00, newBal: 3200.00 }
-        ]
-    },
-    {
-        id: 5, name: "GAYMAR GAYTANO", location: "Alcantara - Colongoso",
-        permitNo: "ROM # 09-3-25", type: "Commercial", commodity: "Sand & Gravel",
-        rate: "0.8286", allowedVol: 2000.00, remainingVol: 2000.00,
-        startDate: "2025-05-09", endDate: "2026-05-09", status: "Active", transactions: []
-    },
-    {
-        id: 6, name: "JUNDL AGRIPINO NGO", location: "Alcantara - Cahayagan Camili",
-        permitNo: "ROM # 025-3-24", type: "Commercial", commodity: "Sand & Gravel",
-        rate: "15,792 CU.M", allowedVol: 20000.00, remainingVol: 15420.00,
-        startDate: "2025-01-21", endDate: "2027-01-21", status: "Active",
-        transactions: [
-            { date: "2025-04-10", drNo: "DR-2025-88", volume: 4580.00, amount: 137400.00, opNo: "OP-8119", truckLoad: "10 Trailer Loads", prevBal: 20000.00, newBal: 15420.00 }
-        ]
-    },
-    {
-        id: 7, name: "JOEL SABLIGAN", location: "Limon Sur",
-        permitNo: "ROM # 178-13-26", type: "Commercial", commodity: "Sand & Gravel",
-        rate: "0.8454", allowedVol: 5000.00, remainingVol: 5000.00,
-        startDate: "2026-03-11", endDate: "2027-03-11", status: "Active", transactions: []
-    },
-    {
-        id: 8, name: "BURGOS LEQUIN", location: "Looc - Punta",
-        permitNo: "ROM # 127-5", type: "Quarry", commodity: "Pebbles",
-        rate: "4.9935", allowedVol: 2000.00, remainingVol: 0.00,
-        startDate: "2024-08-04", endDate: "2025-08-04", status: "Expired",
-        transactions: [
-            { date: "2024-09-01", drNo: "DR-2024-090", volume: 2000.00, amount: 60000.00, opNo: "OP-7210", truckLoad: "5 Heavy Loads", prevBal: 2000.00, newBal: 0.00 }
-        ]
-    }
-];
 
 // Persist data in sessionStorage so it survives page navigation
 function loadPermittees() {
@@ -84,8 +8,9 @@ function loadPermittees() {
     if (raw) {
         try { return JSON.parse(raw); } catch (e) { /* fall through */ }
     }
-    sessionStorage.setItem('enro_permittees', JSON.stringify(DEFAULT_PERMITTEES));
-    return JSON.parse(JSON.stringify(DEFAULT_PERMITTEES));
+    const emptyData = [];
+    sessionStorage.setItem('enro_permittees', JSON.stringify(emptyData));
+    return emptyData;
 }
 
 function savePermittees(data) {

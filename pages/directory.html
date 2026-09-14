@@ -8,6 +8,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../css/style.css">
+    <!-- SheetJS for Excel Import/Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body class="h-full bg-ink-50 font-sans text-ink-800">
 
@@ -22,10 +24,24 @@
                 <h1 class="text-xl font-bold text-ink-900">Permit Directory</h1>
                 <p class="text-xs text-ink-500 mt-0.5">Master database of registered extraction permittees</p>
             </div>
-            <button onclick="openAddEntryModal()" class="btn-primary">
-                <i class="fa-solid fa-plus text-xs"></i>
-                <span>New Permit Entry</span>
-            </button>
+            
+            <div class="flex flex-wrap items-center gap-2">
+                <button onclick="triggerExcelImport()" class="btn-secondary text-xs">
+                    <i class="fa-solid fa-file-excel text-xs text-emerald-600"></i>
+                    <span>Import Excel</span>
+                </button>
+                <input type="file" id="excel-file-input" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleExcelImport(event)">
+                
+                <button onclick="exportToExcel()" class="btn-secondary text-xs">
+                    <i class="fa-solid fa-file-arrow-down text-xs text-enro-700"></i>
+                    <span>Export Excel</span>
+                </button>
+
+                <button onclick="openAddEntryModal()" class="btn-primary">
+                    <i class="fa-solid fa-plus text-xs"></i>
+                    <span>New Permit Entry</span>
+                </button>
+            </div>
         </div>
 
         <!-- Toolbar -->
@@ -52,7 +68,7 @@
                 </select>
 
                 <div class="flex items-center px-3 h-10 text-[11px] font-semibold text-ink-500 bg-white rounded-lg border border-ink-200">
-                    <span id="directory-count-badge">8 entries</span>
+                    <span id="directory-count-badge">0 entries</span>
                 </div>
             </div>
         </div>
