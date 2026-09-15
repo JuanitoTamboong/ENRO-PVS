@@ -24,14 +24,14 @@
                 <h1 class="text-xl font-bold text-ink-900">Permit Directory</h1>
                 <p class="text-xs text-ink-500 mt-0.5">Master database of registered extraction permittees</p>
             </div>
-            
+
             <div class="flex flex-wrap items-center gap-2">
                 <button onclick="triggerExcelImport()" class="btn-secondary text-xs">
                     <i class="fa-solid fa-file-excel text-xs text-emerald-600"></i>
                     <span>Import Excel</span>
                 </button>
                 <input type="file" id="excel-file-input" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleExcelImport(event)">
-                
+
                 <button onclick="exportToExcel()" class="btn-secondary text-xs">
                     <i class="fa-solid fa-file-arrow-down text-xs text-enro-700"></i>
                     <span>Export Excel</span>
@@ -55,7 +55,7 @@
                 </div>
             </div>
 
-            <!-- Filter row: status dropdown matching data statuses -->
+            <!-- Filter row -->
             <div class="flex flex-wrap items-center gap-2">
                 <select id="directory-status-filter" onchange="filterDirectoryTable()"
                     class="input-field !w-auto text-xs font-semibold pr-8">
@@ -216,9 +216,12 @@
     </div>
 </div>
 
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <script src="../supabase/supabase-client.js"></script>
-<script src="../js/app.js"></script>
+<script src="../supabase/utils.js"></script>
 <script src="../js/directory.js"></script>
+
 </body>
 </html>
