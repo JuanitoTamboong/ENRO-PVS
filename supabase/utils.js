@@ -41,18 +41,38 @@
     };
 
     // ------------------------------------------------------------
-    // STATUS LOGIC  (Consumed / Low Volume / No Production / ...)
+    // STATUS LOGIC — official ENRO status set
+    //   • Expired          — permit's end date has passed
+    //   • Fully Consumed   — remaining balance is 0
+    //   • Nearly Exhausted — remaining <= 100 cu.m
+    //   • Low Production   — < 15% of allowance consumed
+    //   • Active           — normal operation
     // ------------------------------------------------------------
     window.getStatusInfo = function (p) {
-        if (p.remainingVol === 0)
-            return { label: 'Consumed',       css: 'bg-rose-50 text-rose-700 border-rose-200' };
-        if (p.remainingVol <= 100)
-            return { label: 'Low Volume',     css: 'bg-amber-50 text-amber-700 border-amber-200' };
-        if (!p.transactions || p.transactions.length === 0)
-            return { label: 'No Production',  css: 'bg-ink-100 text-ink-600 border-ink-200' };
-        if (p.allowedVol > 0 && (p.remainingVol / p.allowedVol) > 0.85)
-            return { label: 'Low Production', css: 'bg-blue-50 text-blue-700 border-blue-200' };
-        return { label: p.status || 'Active', css: 'bg-enro-50 text-enro-700 border-enro-200' };
+        const allowed   = Number(p.allowedVol)   || 0;
+        const remaining = Number(p.remainingVol) || 0;
+
+        // 1. Expired — permit validity ended
+        if (p.endDate) {
+            const end = new Date(p.endDate);
+            if (!isNaN(end.getTime()) && end.getTime() < Date.now())
+                return { label: 'Expired',          css: 'bg-ink-100 text-ink-600 border-ink-200' };
+        }
+
+        // 2. Fully Consumed — no capacity left
+        if (allowed > 0 && remaining === 0)
+            return { label: 'Fully Consumed',       css: 'bg-rose-50 text-rose-700 border-rose-200' };
+
+        // 3. Nearly Exhausted — at or below 100 cu.m
+        if (allowed > 0 && remaining <= 100)
+            return { label: 'Nearly Exhausted',     css: 'bg-amber-50 text-amber-700 border-amber-200' };
+
+        // 4. Low Production — barely used so far (< 15% consumed)
+        if (allowed > 0 && remaining < allowed && (remaining / allowed) > 0.85)
+            return { label: 'Low Production',       css: 'bg-blue-50 text-blue-700 border-blue-200' };
+
+        // 5. Active — normal operation
+        return { label: 'Active',                   css: 'bg-enro-50 text-enro-700 border-enro-200' };
     };
 
     // ------------------------------------------------------------
@@ -100,7 +120,6 @@
         sessionStorage.setItem('enro_permittees', JSON.stringify(data));
     };
 
-    // Shared state (single source of truth)
     window.permitteesData = window.permitteesData || window.loadPermittees();
 
     // ------------------------------------------------------------
@@ -114,7 +133,8 @@
     }
 
     window.handleLogout = async function () {
-        if (window.supabaseClient) await window.supabaseClient.auth.signOut();
+        const client = window.supabaseClient || (typeof supabaseClient !== 'undefined' ? supabaseClient : null);
+        if (client) await client.auth.signOut();
         window.location.href = '../index.html';
     };
 
@@ -140,12 +160,13 @@
         const headerMount = document.getElementById('app-header');
         if (!headerMount) return;
 
-        if (!window.supabaseClient) {
+        const client = window.supabaseClient || (typeof supabaseClient !== 'undefined' ? supabaseClient : null);
+        if (!client) {
             console.error('[Shell] supabaseClient missing.');
             return;
         }
 
-        const { data: { session } } = await window.supabaseClient.auth.getSession();
+        const { data: { session } } = await client.auth.getSession();
         if (!session) {
             window.location.href = '../index.html';
             return;
@@ -218,7 +239,6 @@
         </header>`;
     };
 
-    // Auto-run when the DOM is ready
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', window.initShell);
     } else {

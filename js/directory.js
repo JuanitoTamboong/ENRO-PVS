@@ -16,6 +16,18 @@
     let realtimeChannel = null;
 
     // ------------------------------------------------------------
+    // DATE HELPER — converts Excel dates / strings to "YYYY-MM-DD"
+    // ------------------------------------------------------------
+    function toIsoDate(v) {
+        if (!v) return null;
+        if (v instanceof Date && !isNaN(v.getTime())) {
+            return v.toISOString().slice(0, 10);
+        }
+        const d = new Date(v);
+        return isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
+    }
+
+    // ------------------------------------------------------------
     // LOAD FROM SUPABASE
     // ------------------------------------------------------------
     async function loadPermitteesFromSupabase() {
@@ -186,8 +198,8 @@
             rate:          document.getElementById('new-rate').value.trim(),
             allowed_vol:   allowed,
             remaining_vol: allowed,
-            start_date:    document.getElementById('new-start-date').value || null,
-            end_date:      document.getElementById('new-end-date').value || null,
+            start_date:    toIsoDate(document.getElementById('new-start-date').value),
+            end_date:      toIsoDate(document.getElementById('new-end-date').value),
             status:        document.getElementById('new-status').value
         };
 
@@ -213,7 +225,6 @@
         if (typeof window.showToast === 'function') {
             window.showToast('Permittee record added successfully.', 'success');
         }
-        // Realtime subscription will refresh the table automatically.
     }
 
     // ------------------------------------------------------------
@@ -232,7 +243,7 @@
         reader.onload = async function (e) {
             try {
                 const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
+                const workbook = XLSX.read(data, { type: 'array', cellDates: true });
                 const allImportedRows = [];
 
                 workbook.SheetNames.forEach(sheetName => {
@@ -252,9 +263,8 @@
                             : (mun || loc || 'Unknown Location');
 
                         const permitNo = String(
-                            row['PERMIT NO.'] || row['Permit No.'] ||
-                            row['ECC no.'] || row['ECC'] || row['permitNo'] ||
-                            `ROM-${index}-26`
+                            row['PERMIT NO.'] || row['Permit No.'] || row['permitNo'] ||
+                            row['ECC no.'] || row['ECC'] || `ROM-${index}-26`
                         ).trim();
 
                         const rawVolStr = String(
@@ -275,8 +285,8 @@
                             rate:          rawVolStr,
                             allowed_vol:   numericVol,
                             remaining_vol: numericVol,
-                            start_date:    String(row['ISSUED DATE'] || row['START DATE'] || row['Start Date'] || row['startDate'] || '').trim() || null,
-                            end_date:      String(row['END DATE'] || row['End Date'] || row['endDate'] || '').trim() || null,
+                            start_date:    toIsoDate(row['ISSUED DATE'] || row['START DATE'] || row['Start Date'] || row['startDate']),
+                            end_date:      toIsoDate(row['END DATE'] || row['End Date'] || row['endDate']),
                             status:        String(row['AREA STATUS CLEARANCE'] || row['STATUS'] || row['Status'] || row['status'] || 'Active').trim()
                         });
                     });
@@ -309,7 +319,6 @@
                 if (typeof window.showToast === 'function') {
                     window.showToast(`Successfully imported ${allImportedRows.length} records.`, 'success');
                 }
-                // Realtime will refresh the table.
             } catch (err) {
                 console.error(err);
                 if (typeof window.showToast === 'function') {
@@ -358,7 +367,7 @@
     }
 
     // ------------------------------------------------------------
-    // EXPOSE FUNCTIONS TO HTML (for onclick="...")
+    // EXPOSE FUNCTIONS TO HTML
     // ------------------------------------------------------------
     window.filterDirectoryTable  = filterDirectoryTable;
     window.openAddEntryModal     = openAddEntryModal;

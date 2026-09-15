@@ -2,8 +2,44 @@
 // LOGIN PAGE — Role Selection & Authentication
 // ============================================================
 
-let currentLoginRole = 'admin'; // 'admin' or 'admin_staff'
+let currentLoginRole = 'admin';
 
+// ------------------------------------------------------------
+// Fallback: guarantee showToast exists even if utils.js fails
+// ------------------------------------------------------------
+if (typeof window.showToast !== 'function') {
+    window.showToast = function (message, type = 'success') {
+        const toast = document.getElementById('toast');
+        const icon  = document.getElementById('toast-icon');
+        if (!toast) { console.log('[Toast]', type, message); return; }
+
+        const titleEl = document.getElementById('toast-title');
+        const msgEl   = document.getElementById('toast-message');
+        if (titleEl) titleEl.innerText = type === 'success' ? 'Success' : 'Information';
+        if (msgEl)   msgEl.innerText   = message;
+
+        if (icon) {
+            icon.innerHTML = type === 'success'
+                ? '<i class="fa-solid fa-circle-check text-enro-400 text-lg"></i>'
+                : '<i class="fa-solid fa-circle-info text-sky-400 text-lg"></i>';
+        }
+
+        toast.classList.add('show');
+        clearTimeout(window.showToast.timeout);
+        window.showToast.timeout = setTimeout(() => toast.classList.remove('show'), 3500);
+    };
+}
+
+// ------------------------------------------------------------
+// Resolve supabase client (global or module-scoped)
+// ------------------------------------------------------------
+function getSupabase() {
+    return window.supabaseClient || (typeof supabaseClient !== 'undefined' ? supabaseClient : null);
+}
+
+// ------------------------------------------------------------
+// Role helpers
+// ------------------------------------------------------------
 function normalizeLoginRole(role) {
     return role?.toString().toLowerCase().replace(/[\s-]+/g, '_');
 }
@@ -41,16 +77,6 @@ function selectLoginRole(role) {
     sessionStorage.setItem('enro_login_role', role);
 }
 
-// Restore saved role on page load
-(function restoreLoginRole() {
-    const saved = sessionStorage.getItem('enro_login_role');
-    if (saved === 'admin' || saved === 'admin_staff') {
-        selectLoginRole(saved);
-    } else {
-        selectLoginRole('admin');
-    }
-})();
-
 // ------------------------------------------------------------
 // Password visibility toggle
 // ------------------------------------------------------------
@@ -82,6 +108,14 @@ async function handleLogin(e) {
     error.innerText = '';
     button.disabled = true;
 
+    const client = getSupabase();
+    if (!client) {
+        error.innerText = 'System error: Authentication service unavailable. Please refresh.';
+        error.classList.remove('hidden');
+        button.disabled = false;
+        return;
+    }
+
     if (!emailInput.value.trim() || !passwordInput.value) {
         error.innerText = 'Please enter both email and password.';
         error.classList.remove('hidden');
@@ -90,7 +124,7 @@ async function handleLogin(e) {
     }
 
     try {
-        const { error: authError } = await supabaseClient.auth.signInWithPassword({
+        const { error: authError } = await client.auth.signInWithPassword({
             email: emailInput.value.trim(),
             password: passwordInput.value
         });
@@ -98,11 +132,11 @@ async function handleLogin(e) {
         if (authError) throw authError;
 
         // Verify the account's role matches the selected login role
-        const { data: { user } } = await supabaseClient.auth.getUser();
+        const { data: { user } } = await client.auth.getUser();
         const accountRole = getAccountRole(user);
 
         if (accountRole && accountRole !== currentLoginRole) {
-            await supabaseClient.auth.signOut();
+            await client.auth.signOut();
             throw new Error(
                 `This account is not registered as ${
                     currentLoginRole === 'admin' ? 'an Admin' : 'Admin Staff'
@@ -128,10 +162,33 @@ async function handleLogin(e) {
 }
 
 // ------------------------------------------------------------
-// Session check — redirect if already authenticated
+// Wire up DOM-dependent handlers once page is ready
 // ------------------------------------------------------------
-supabaseClient.auth.getSession().then(({ data: { session } }) => {
-    if (session) {
-        window.location.href = './pages/dashboard.html';
+document.addEventListener('DOMContentLoaded', () => {
+    // Restore saved role
+    const saved = sessionStorage.getItem('enro_login_role');
+    if (saved === 'admin' || saved === 'admin_staff') {
+        selectLoginRole(saved);
+    } else {
+        selectLoginRole('admin');
+    }
+
+    // Forgot password link
+    const forgot = document.getElementById('forgot-link');
+    if (forgot) {
+        forgot.addEventListener('click', (ev) => {
+            ev.preventDefault();
+            showToast('Contact ENRO IT administrator for password reset.', 'info');
+        });
+    }
+
+    // Session check — redirect if already authenticated
+    const client = getSupabase();
+    if (client) {
+        client.auth.getSession().then(({ data: { session } }) => {
+            if (session) {
+                window.location.href = './pages/dashboard.html';
+            }
+        });
     }
 });
