@@ -113,13 +113,13 @@
 
 <!-- ============ DETAILS MODAL ============ -->
 <div id="modal-log-details" class="modal-overlay">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
+    <div class="modal-card bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
         <div class="px-5 py-4 border-b border-ink-100 flex items-center justify-between shrink-0">
             <div>
                 <h3 class="text-sm font-bold text-ink-900">Log Entry Details</h3>
                 <p class="text-[11px] text-ink-400 mt-0.5" id="log-details-subtitle">—</p>
             </div>
-            <button onclick="closeLogDetailsModal()" class="w-7 h-7 flex items-center justify-center text-ink-400 hover:text-ink-700 hover:bg-ink-100 rounded-lg transition">
+            <button onclick="closeLogDetailsModal()" class="modal-close-icon w-7 h-7 flex items-center justify-center text-ink-400 hover:text-ink-700 hover:bg-ink-100 rounded-lg transition">
                 <i class="fa-solid fa-xmark text-sm"></i>
             </button>
         </div>
@@ -136,7 +136,7 @@
 
 <!-- ============ CLEAR LOGS MODAL ============ -->
 <div id="modal-clear-logs" class="modal-overlay">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+    <div class="modal-card bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
         <div class="p-5">
             <div style="width:48px;height:48px;margin:0 auto 12px;border-radius:9999px;background:#fff1f2;display:flex;align-items:center;justify-content:center;">
                 <i class="fa-solid fa-triangle-exclamation" style="color:#f43f5e;font-size:1.1rem;"></i>

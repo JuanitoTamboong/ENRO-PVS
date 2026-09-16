@@ -13,6 +13,162 @@ function getClient() {
 }
 
 // ------------------------------------------------------------
+// INJECT ACTIVITY LOGS MODAL ANIMATION CSS (once)
+// ------------------------------------------------------------
+function ensureActivityModalStyles() {
+    if (document.getElementById('activity-modal-animations')) return;
+
+    const style = document.createElement('style');
+    style.id = 'activity-modal-animations';
+    style.innerHTML = `
+        /* --- Overlay fade in / out --- */
+        @keyframes actOverlayIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+        @keyframes actOverlayOut {
+            from { opacity: 1; }
+            to   { opacity: 0; }
+        }
+
+        /* --- Card spring pop in / out --- */
+        @keyframes actCardIn {
+            0%   { opacity: 0; transform: translateY(24px) scale(0.92); }
+            60%  { opacity: 1; transform: translateY(-4px) scale(1.02); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes actCardOut {
+            0%   { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(16px) scale(0.94); }
+        }
+
+        /* --- Icon pop --- */
+        @keyframes actIconPop {
+            0%   { opacity: 0; transform: scale(0.5) rotate(-90deg); }
+            60%  { opacity: 1; transform: scale(1.15) rotate(8deg); }
+            100% { opacity: 1; transform: scale(1) rotate(0deg); }
+        }
+
+        /* --- Staggered text fade --- */
+        @keyframes actTextIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- Apply to any activity modal overlay --- */
+        .modal-overlay.active {
+            animation: actOverlayIn 0.26s ease-out both;
+        }
+        .modal-overlay.closing {
+            animation: actOverlayOut 0.22s ease-in both;
+        }
+
+        /* --- Card --- */
+        .modal-overlay.active > .modal-card {
+            animation: actCardIn 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+            transform-origin: center center;
+        }
+        .modal-overlay.closing > .modal-card {
+            animation: actCardOut 0.24s ease-in both;
+        }
+
+        /* --- Icon inside modal --- */
+        .modal-overlay.active [style*="border-radius:9999px"] {
+            animation: actIconPop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) 0.08s both;
+        }
+
+        /* --- Staggered content --- */
+        .modal-overlay.active .p-5,
+        .modal-overlay.active .modal-actions {
+            animation: actTextIn 0.34s ease-out 0.14s both;
+        }
+
+        /* --- Close (X) icon rotate — only the header X button --- */
+        .modal-overlay .modal-close-icon {
+            transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+        }
+        .modal-overlay .modal-close-icon:hover {
+            transform: rotate(90deg) scale(1.05);
+        }
+
+        /* --- Keep modal action buttons from squishing --- */
+        .modal-overlay .btn-secondary,
+        .modal-overlay .btn-primary,
+        .modal-overlay .modal-btn {
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+
+        /* --- Input focus glow --- */
+        .modal-overlay .input-field {
+            transition: border-color 0.2s ease, box-shadow 0.25s ease, background 0.2s ease;
+        }
+        .modal-overlay .input-field:focus {
+            border-color: #16a34a;
+            box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.08);
+            background: #fafffb;
+        }
+
+        /* --- Button micro-interactions --- */
+        .modal-overlay .btn-primary,
+        .modal-overlay .btn-secondary,
+        .modal-overlay .modal-btn {
+            transition: background-color 0.2s ease, transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.22s ease, color 0.18s ease;
+        }
+        .modal-overlay .btn-primary:hover,
+        .modal-overlay .btn-secondary:hover {
+            transform: translateY(-1px);
+        }
+        .modal-overlay .btn-primary:active,
+        .modal-overlay .btn-secondary:active {
+            transform: scale(0.97);
+        }
+        .modal-overlay .modal-btn--danger:hover:not(:disabled) {
+            transform: translateY(-1px) scale(1.02);
+            background-color: #be123c;
+            animation: actDangerPulse 1.4s ease-out infinite;
+        }
+        .modal-overlay .modal-btn--danger:active:not(:disabled) {
+            transform: scale(0.97);
+        }
+        @keyframes actDangerPulse {
+            0%   { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.55); }
+            70%  { box-shadow: 0 0 0 10px rgba(225, 29, 72, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0); }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+// ------------------------------------------------------------
+// Generic smooth open/close helpers
+// ------------------------------------------------------------
+function smoothOpenModal(modalId) {
+    ensureActivityModalStyles();
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+
+    modal.classList.remove('closing');
+    modal.style.display = 'flex';
+    void modal.offsetWidth;
+    modal.classList.add('active');
+}
+
+function smoothCloseModal(modalId, onClosed) {
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+
+    modal.classList.remove('active');
+    modal.classList.add('closing');
+
+    setTimeout(() => {
+        modal.classList.remove('closing');
+        modal.style.display = '';
+        if (typeof onClosed === 'function') onClosed();
+    }, 250);
+}
+
+// ------------------------------------------------------------
 // Fetch logs
 // ------------------------------------------------------------
 async function fetchLogs() {
@@ -213,7 +369,7 @@ function goToPrevPage() { goToPage(currentPage - 1); }
 function goToNextPage() { goToPage(currentPage + 1); }
 
 // ------------------------------------------------------------
-// Details modal — CLEAN, HUMAN-READABLE OUTPUT
+// Details modal — CLEAN, HUMAN-READABLE OUTPUT — SMOOTH
 // ------------------------------------------------------------
 function openLogDetailsModal(id) {
     const log = allLogs.find(l => String(l.id) === String(id));
@@ -362,17 +518,15 @@ function openLogDetailsModal(id) {
     const pre = document.getElementById('log-details-json');
     if (pre) pre.innerText = lines.join('\n');
 
-    const modal = document.getElementById('modal-log-details');
-    if (modal) modal.classList.add('active');
+    smoothOpenModal('modal-log-details');
 }
 
 function closeLogDetailsModal() {
-    const modal = document.getElementById('modal-log-details');
-    if (modal) modal.classList.remove('active');
+    smoothCloseModal('modal-log-details');
 }
 
 // ------------------------------------------------------------
-// Clear logs
+// Clear logs — SMOOTH
 // ------------------------------------------------------------
 function openClearLogsModal() {
     const countEl = document.getElementById('clear-logs-count');
@@ -384,8 +538,7 @@ function openClearLogsModal() {
     const btn = document.getElementById('clear-logs-confirm-btn');
     if (btn) btn.disabled = true;
 
-    const modal = document.getElementById('modal-clear-logs');
-    if (modal) modal.classList.add('active');
+    smoothOpenModal('modal-clear-logs');
 
     if (input && !input.__wired) {
         input.addEventListener('input', function () {
@@ -395,15 +548,19 @@ function openClearLogsModal() {
         });
         input.__wired = true;
     }
+
+    setTimeout(() => {
+        if (input) input.focus();
+    }, 350);
 }
 
 function closeClearLogsModal() {
-    const modal = document.getElementById('modal-clear-logs');
-    if (modal) modal.classList.remove('active');
-    const input = document.getElementById('clear-logs-confirm-input');
-    if (input) input.value = '';
-    const btn = document.getElementById('clear-logs-confirm-btn');
-    if (btn) btn.disabled = true;
+    smoothCloseModal('modal-clear-logs', () => {
+        const input = document.getElementById('clear-logs-confirm-input');
+        if (input) input.value = '';
+        const btn = document.getElementById('clear-logs-confirm-btn');
+        if (btn) btn.disabled = true;
+    });
 }
 
 async function confirmClearLogs() {

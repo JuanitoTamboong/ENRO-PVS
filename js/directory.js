@@ -30,6 +30,182 @@
     // ------------------------------------------------------------
     const DELETE_ALL_PHRASE = 'DELETE ALL';
 
+    // ------------------------------------------------------------
+    // INJECT DIRECTORY MODAL ANIMATION CSS (once)
+    // ------------------------------------------------------------
+    function ensureDirectoryModalStyles() {
+        if (document.getElementById('directory-modal-animations')) return;
+
+        const style = document.createElement('style');
+        style.id = 'directory-modal-animations';
+        style.innerHTML = `
+            /* --- Overlay fade in / out --- */
+            @keyframes modalOverlayIn {
+                from { opacity: 0; }
+                to   { opacity: 1; }
+            }
+            @keyframes modalOverlayOut {
+                from { opacity: 1; }
+                to   { opacity: 0; }
+            }
+
+            /* --- Card spring pop in / out --- */
+            @keyframes modalCardIn {
+                0%   { opacity: 0; transform: translateY(24px) scale(0.92); }
+                60%  { opacity: 1; transform: translateY(-4px) scale(1.02); }
+                100% { opacity: 1; transform: translateY(0) scale(1); }
+            }
+            @keyframes modalCardOut {
+                0%   { opacity: 1; transform: translateY(0) scale(1); }
+                100% { opacity: 0; transform: translateY(16px) scale(0.94); }
+            }
+
+            /* --- Icon pop --- */
+            @keyframes modalIconPop {
+                0%   { opacity: 0; transform: scale(0.5) rotate(-90deg); }
+                60%  { opacity: 1; transform: scale(1.15) rotate(8deg); }
+                100% { opacity: 1; transform: scale(1) rotate(0deg); }
+            }
+
+            /* --- Staggered text fade --- */
+            @keyframes modalTextIn {
+                from { opacity: 0; transform: translateY(6px); }
+                to   { opacity: 1; transform: translateY(0); }
+            }
+
+            /* --- Apply to any directory modal overlay --- */
+            .modal-overlay.active {
+                animation: modalOverlayIn 0.26s ease-out both;
+            }
+            .modal-overlay.closing {
+                animation: modalOverlayOut 0.22s ease-in both;
+            }
+
+            /* --- Card --- */
+            .modal-overlay.active > .modal-card,
+            .modal-overlay.active > .logout-card,
+            .modal-overlay.active > div:not(.modal-card):not(.logout-card) {
+                animation: modalCardIn 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+                transform-origin: center center;
+            }
+            .modal-overlay.closing > .modal-card,
+            .modal-overlay.closing > .logout-card,
+            .modal-overlay.closing > div:not(.modal-card):not(.logout-card) {
+                animation: modalCardOut 0.24s ease-in both;
+            }
+
+            /* --- Icon inside modal --- */
+            .modal-overlay.active [style*="border-radius:9999px"] {
+                animation: modalIconPop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) 0.08s both;
+            }
+
+            /* --- Staggered content --- */
+            .modal-overlay.active > div > .p-5,
+            .modal-overlay.active .form-section {
+                animation: modalTextIn 0.34s ease-out 0.14s both;
+            }
+
+            /* --- Close (X) icon rotate — only the header X button --- */
+            .modal-overlay .modal-close-icon {
+                transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+            }
+            .modal-overlay .modal-close-icon:hover {
+                transform: rotate(90deg) scale(1.05);
+            }
+
+            /* --- Keep modal action buttons from squishing --- */
+            .modal-overlay .btn-secondary,
+            .modal-overlay .btn-primary,
+            .modal-overlay .modal-btn {
+                flex-shrink: 0;
+                white-space: nowrap;
+            }
+
+            /* --- Input focus glow --- */
+            .modal-overlay .input-field {
+                transition: border-color 0.2s ease, box-shadow 0.25s ease, background 0.2s ease;
+            }
+            .modal-overlay .input-field:focus {
+                border-color: #16a34a;
+                box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.08);
+                background: #fafffb;
+            }
+            .modal-overlay .input-field:read-only {
+                background: #f8fafc;
+                cursor: default;
+            }
+
+            /* --- Smooth select arrow --- */
+            .modal-overlay select.input-field {
+                appearance: none;
+                background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+                background-repeat: no-repeat;
+                background-position: right 0.75rem center;
+                background-size: 10px;
+                padding-right: 2rem;
+            }
+
+            /* --- Section title underline animation --- */
+            .modal-overlay.active .form-section-title {
+                position: relative;
+                display: inline-block;
+            }
+            .modal-overlay.active .form-section-title::after {
+                content: '';
+                position: absolute;
+                bottom: -3px;
+                left: 0;
+                height: 2px;
+                background: #16a34a;
+                border-radius: 1px;
+                animation: sectionUnderline 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both;
+            }
+            @keyframes sectionUnderline {
+                from { width: 0; }
+                to   { width: 100%; }
+            }
+
+            /* --- Button micro-interactions --- */
+            .modal-overlay .btn-primary,
+            .modal-overlay .btn-secondary,
+            .modal-overlay .modal-btn {
+                transition: background-color 0.2s ease, transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.22s ease, color 0.18s ease;
+            }
+            .modal-overlay .btn-primary:hover,
+            .modal-overlay .btn-secondary:hover {
+                transform: translateY(-1px);
+            }
+            .modal-overlay .btn-primary:active,
+            .modal-overlay .btn-secondary:active {
+                transform: scale(0.97);
+            }
+            .modal-overlay .modal-btn--danger:hover:not(:disabled) {
+                transform: translateY(-1px) scale(1.02);
+                background-color: #be123c;
+                animation: dangerPulse 1.4s ease-out infinite;
+            }
+            .modal-overlay .modal-btn--danger:active:not(:disabled) {
+                transform: scale(0.97);
+            }
+            @keyframes dangerPulse {
+                0%   { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.55); }
+                70%  { box-shadow: 0 0 0 10px rgba(225, 29, 72, 0); }
+                100% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0); }
+            }
+
+            /* --- Success pulse for auto-filled remaining volume --- */
+            @keyframes volumePulse {
+                0%   { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.3); }
+                70%  { box-shadow: 0 0 0 8px rgba(22, 163, 74, 0); }
+                100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); }
+            }
+            .volume-pulse {
+                animation: volumePulse 1.2s ease-out;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
     function getClient() {
         return window.supabaseClient ||
                (typeof supabaseClient !== 'undefined' ? supabaseClient : null);
@@ -53,6 +229,35 @@
             month: 'short',
             day: 'numeric'
         });
+    }
+
+    // ------------------------------------------------------------
+    // Generic smooth open/close helpers
+    // ------------------------------------------------------------
+    function smoothOpenModal(modalId) {
+        ensureDirectoryModalStyles();
+        const modal = document.getElementById(modalId);
+        if (!modal) return;
+
+        modal.classList.remove('closing');
+        modal.style.display = 'flex';
+        // Force reflow so animation restarts
+        void modal.offsetWidth;
+        modal.classList.add('active');
+    }
+
+    function smoothCloseModal(modalId, onClosed) {
+        const modal = document.getElementById(modalId);
+        if (!modal) return;
+
+        modal.classList.remove('active');
+        modal.classList.add('closing');
+
+        setTimeout(() => {
+            modal.classList.remove('closing');
+            modal.style.display = '';
+            if (typeof onClosed === 'function') onClosed();
+        }, 250);
     }
 
     // ------------------------------------------------------------
@@ -154,7 +359,6 @@
             const startDate        = formatDateDisplay(p.startDate);
             const endDate          = formatDateDisplay(p.endDate);
 
-            // Safe name for the onclick attribute (escape single quotes)
             const safeName = String(p.name || '').replace(/'/g, "\\'");
 
             return `
@@ -298,16 +502,22 @@
     }
 
     // ------------------------------------------------------------
-    // Add Permit Modal
+    // Add Permit Modal — SMOOTH
     // ------------------------------------------------------------
     function openAddEntryModal() {
-        const modal = document.getElementById('modal-add-entry');
-        if (modal) modal.classList.add('active');
+        smoothOpenModal('modal-add-entry');
+
+        const form = document.querySelector('#modal-add-entry form');
+        if (form) form.scrollTop = 0;
+
+        setTimeout(() => {
+            const first = document.getElementById('new-name');
+            if (first) first.focus();
+        }, 350);
     }
 
     function closeAddEntryModal() {
-        const modal = document.getElementById('modal-add-entry');
-        if (modal) modal.classList.remove('active');
+        smoothCloseModal('modal-add-entry');
     }
 
     async function submitNewPermitEntry(e) {
@@ -363,20 +573,19 @@
     }
 
     // ------------------------------------------------------------
-    // DELETE ONE PERMIT
+    // DELETE ONE PERMIT — SMOOTH
     // ------------------------------------------------------------
     function openDeleteModal(id, name) {
         deleteTargetId = id;
         const nameEl = document.getElementById('delete-target-name');
         if (nameEl) nameEl.innerText = name || 'this record';
-        const modal = document.getElementById('modal-delete-confirm');
-        if (modal) modal.classList.add('active');
+        smoothOpenModal('modal-delete-confirm');
     }
 
     function closeDeleteModal() {
-        deleteTargetId = null;
-        const modal = document.getElementById('modal-delete-confirm');
-        if (modal) modal.classList.remove('active');
+        smoothCloseModal('modal-delete-confirm', () => {
+            deleteTargetId = null;
+        });
     }
 
     async function confirmDelete() {
@@ -425,7 +634,7 @@
     }
 
     // ------------------------------------------------------------
-    // DELETE ALL PERMITTEES
+    // DELETE ALL PERMITTEES — SMOOTH
     // ------------------------------------------------------------
     function openDeleteAllModal() {
         const countEl = document.getElementById('delete-all-count');
@@ -437,8 +646,7 @@
         const btn = document.getElementById('delete-all-confirm-btn');
         if (btn) btn.disabled = true;
 
-        const modal = document.getElementById('modal-delete-all');
-        if (modal) modal.classList.add('active');
+        smoothOpenModal('modal-delete-all');
 
         // Wire up live input validation (only once)
         if (input && !input.__wired) {
@@ -452,12 +660,12 @@
     }
 
     function closeDeleteAllModal() {
-        const modal = document.getElementById('modal-delete-all');
-        if (modal) modal.classList.remove('active');
-        const input = document.getElementById('delete-all-confirm-input');
-        if (input) input.value = '';
-        const btn = document.getElementById('delete-all-confirm-btn');
-        if (btn) btn.disabled = true;
+        smoothCloseModal('modal-delete-all', () => {
+            const input = document.getElementById('delete-all-confirm-input');
+            if (input) input.value = '';
+            const btn = document.getElementById('delete-all-confirm-btn');
+            if (btn) btn.disabled = true;
+        });
     }
 
     async function confirmDeleteAll() {
@@ -478,8 +686,6 @@
             btn.innerHTML = 'Deleting...';
         }
 
-        // Delete every row. The `.neq` on a UUID that will never exist
-        // is a safe way to force a "match all" delete without listing ids.
         const { error } = await client
             .from('permittees')
             .delete()
@@ -696,7 +902,7 @@
     }
 
     // ------------------------------------------------------------
-    // Auto-fill remaining volume
+    // Auto-fill remaining volume with pulse animation
     // ------------------------------------------------------------
     function setupVolumeAutoFill() {
         const allowedInput = document.getElementById('new-allowed-vol');
@@ -705,6 +911,9 @@
         if (allowedInput && remainingInput) {
             allowedInput.addEventListener('input', function () {
                 remainingInput.value = this.value;
+                remainingInput.classList.remove('volume-pulse');
+                void remainingInput.offsetWidth;
+                remainingInput.classList.add('volume-pulse');
             });
         }
     }

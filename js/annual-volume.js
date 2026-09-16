@@ -29,6 +29,176 @@ function mapTxRow(t) {
     };
 }
 
+// ------------------------------------------------------------
+// INJECT ANNUAL VOLUME MODAL ANIMATION CSS (once)
+// Matches the logout / directory modal look & feel
+// ------------------------------------------------------------
+function ensureAnnualModalStyles() {
+    if (document.getElementById('annual-modal-animations')) return;
+
+    const style = document.createElement('style');
+    style.id = 'annual-modal-animations';
+    style.innerHTML = `
+        /* --- Overlay fade in / out --- */
+        @keyframes annualOverlayIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+        @keyframes annualOverlayOut {
+            from { opacity: 1; }
+            to   { opacity: 0; }
+        }
+
+        /* --- Card spring pop in / out --- */
+        @keyframes annualCardIn {
+            0%   { opacity: 0; transform: translateY(24px) scale(0.92); }
+            60%  { opacity: 1; transform: translateY(-4px) scale(1.02); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes annualCardOut {
+            0%   { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(16px) scale(0.94); }
+        }
+
+        /* --- Icon pop --- */
+        @keyframes annualIconPop {
+            0%   { opacity: 0; transform: scale(0.5) rotate(-90deg); }
+            60%  { opacity: 1; transform: scale(1.15) rotate(8deg); }
+            100% { opacity: 1; transform: scale(1) rotate(0deg); }
+        }
+
+        /* --- Staggered text fade --- */
+        @keyframes annualTextIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- Section title underline --- */
+        @keyframes annualSectionUnderline {
+            from { width: 0; }
+            to   { width: 100%; }
+        }
+
+        /* --- Apply to the transaction modal --- */
+        #modal-add-tx.active {
+            animation: annualOverlayIn 0.26s ease-out both;
+        }
+        #modal-add-tx.closing {
+            animation: annualOverlayOut 0.22s ease-in both;
+        }
+
+        #modal-add-tx.active .modal-card {
+            animation: annualCardIn 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+            transform-origin: center center;
+        }
+        #modal-add-tx.closing .modal-card {
+            animation: annualCardOut 0.24s ease-in both;
+        }
+
+        /* --- Icon inside modal --- */
+        #modal-add-tx.active [style*="border-radius:9999px"] {
+            animation: annualIconPop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) 0.08s both;
+        }
+
+        /* --- Staggered form rows --- */
+        #modal-add-tx.active .form-stagger > * {
+            animation: annualTextIn 0.34s ease-out both;
+        }
+        #modal-add-tx.active .form-stagger > *:nth-child(1) { animation-delay: 0.10s; }
+        #modal-add-tx.active .form-stagger > *:nth-child(2) { animation-delay: 0.14s; }
+        #modal-add-tx.active .form-stagger > *:nth-child(3) { animation-delay: 0.18s; }
+        #modal-add-tx.active .form-stagger > *:nth-child(4) { animation-delay: 0.22s; }
+        #modal-add-tx.active .form-stagger > *:nth-child(5) { animation-delay: 0.26s; }
+        #modal-add-tx.active .form-stagger > *:nth-child(6) { animation-delay: 0.30s; }
+
+        /* --- Close (X) icon rotate — only the header X button --- */
+        #modal-add-tx .modal-close-icon {
+            transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+        }
+        #modal-add-tx .modal-close-icon:hover {
+            transform: rotate(90deg) scale(1.05);
+        }
+
+        /* --- Keep modal action buttons from squishing --- */
+        #modal-add-tx .btn-secondary,
+        #modal-add-tx .btn-primary,
+        #modal-add-tx .modal-btn {
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+
+        /* --- Input focus glow --- */
+        #modal-add-tx .input-field {
+            transition: border-color 0.2s ease, box-shadow 0.25s ease, background 0.2s ease;
+        }
+        #modal-add-tx .input-field:focus {
+            border-color: #16a34a;
+            box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.08);
+            background: #fafffb;
+        }
+
+        /* --- Section title underline animation --- */
+        #modal-add-tx.active .form-section-title {
+            position: relative;
+            display: inline-block;
+        }
+        #modal-add-tx.active .form-section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -3px;
+            left: 0;
+            height: 2px;
+            background: #16a34a;
+            border-radius: 1px;
+            animation: annualSectionUnderline 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both;
+        }
+
+        /* --- Button micro-interactions --- */
+        #modal-add-tx .btn-primary,
+        #modal-add-tx .btn-secondary,
+        #modal-add-tx .modal-btn {
+            transition: background-color 0.2s ease, transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.22s ease, color 0.18s ease;
+        }
+        #modal-add-tx .btn-primary:hover,
+        #modal-add-tx .btn-secondary:hover {
+            transform: translateY(-1px);
+        }
+        #modal-add-tx .btn-primary:active,
+        #modal-add-tx .btn-secondary:active {
+            transform: scale(0.97);
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+// ------------------------------------------------------------
+// Generic smooth open/close helpers
+// ------------------------------------------------------------
+function smoothOpenModal(modalId) {
+    ensureAnnualModalStyles();
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+
+    modal.classList.remove('closing');
+    modal.style.display = 'flex';
+    void modal.offsetWidth;
+    modal.classList.add('active');
+}
+
+function smoothCloseModal(modalId, onClosed) {
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+
+    modal.classList.remove('active');
+    modal.classList.add('closing');
+
+    setTimeout(() => {
+        modal.classList.remove('closing');
+        modal.style.display = '';
+        if (typeof onClosed === 'function') onClosed();
+    }, 250);
+}
+
 async function reloadPermitteesFromDb() {
     const client = getClient();
     if (!client) return;
@@ -329,7 +499,7 @@ function renderLedgerTable(transactions) {
 }
 
 // ------------------------------------------------------------
-// Add Transaction Modal
+// Add Transaction Modal — SMOOTH
 // ------------------------------------------------------------
 function openAddTransactionModal() {
     const p = (window.permitteesData || []).find(x => String(x.id) === selectedPermitteeId);
@@ -339,16 +509,27 @@ function openAddTransactionModal() {
     document.getElementById('tx-modal-permittee-name').innerText = p.name;
     document.getElementById('tx-modal-current-balance').innerText = `${fmt(p.remainingVol)} cu.m`;
     document.getElementById('tx-modal-error').classList.add('hidden');
-    document.getElementById('modal-add-tx').classList.add('active');
+
+    smoothOpenModal('modal-add-tx');
+
+    // Reset form scroll to top
+    const form = document.querySelector('#modal-add-tx form');
+    if (form) form.scrollTop = 0;
 
     const dateInput = document.getElementById('tx-date');
     if (dateInput && !dateInput.value) {
         dateInput.value = new Date().toISOString().slice(0, 10);
     }
+
+    // Focus first input after animation
+    setTimeout(() => {
+        const first = document.getElementById('tx-date');
+        if (first) first.focus();
+    }, 350);
 }
 
 function closeAddTransactionModal() {
-    document.getElementById('modal-add-tx').classList.remove('active');
+    smoothCloseModal('modal-add-tx');
 }
 
 async function submitTransactionEntry(e) {
