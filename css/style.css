@@ -783,8 +783,7 @@ main { animation: page-enter 0.28s ease-out both; }
 }
 
 /* ============================================================
-   MODAL ACTION BUTTONS
-   ============================================================ */
+   MODAL ACTION BUTTONS   ============================================================ */
 .modal-actions {
     display: flex;
     border-top: 1px solid #f1f5f9;
@@ -1154,3 +1153,7 @@ main { animation: page-enter 0.28s ease-out both; }
 
 .annual-ledger-table th:nth-child(8),
 .annual-ledger-table td:nth-child(8) { width: 12%; text-align: right; }
+
+.warning-banner.hidden {
+    display: none !important;
+}
