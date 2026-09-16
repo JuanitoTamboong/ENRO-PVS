@@ -559,7 +559,6 @@ main { animation: page-enter 0.28s ease-out both; }
    DIRECTORY TABLE — 13 columns with horizontal scroll
    ============================================================ */
 
-/* Scroll container — this is what actually scrolls sideways */
 .directory-scroll {
     width: 100%;
     overflow-x: auto;
@@ -569,7 +568,6 @@ main { animation: page-enter 0.28s ease-out both; }
     scrollbar-color: #94a3b8 #f1f5f9;
 }
 
-/* Table is WIDER than the viewport → forces horizontal scroll */
 .directory-table {
     border-collapse: collapse;
     width: 100%;
@@ -577,7 +575,6 @@ main { animation: page-enter 0.28s ease-out both; }
     table-layout: auto;
 }
 
-/* Header */
 .directory-table thead th {
     font-size: 0.62rem;
     letter-spacing: 0.05em;
@@ -592,7 +589,6 @@ main { animation: page-enter 0.28s ease-out both; }
     vertical-align: middle;
 }
 
-/* Body cells */
 .directory-table tbody td {
     padding: 0.75rem 0.85rem;
     border-bottom: 1px solid #f1f5f9;
@@ -606,30 +602,24 @@ main { animation: page-enter 0.28s ease-out both; }
 .directory-table tbody tr:last-child td { border-bottom: none; }
 .directory-table tbody tr:hover td { background: #f8fafc; }
 
-/* Permittee column emphasis */
 .directory-table tbody td:nth-child(1) {
     font-weight: 700;
     color: #0f172a;
     min-width: 170px;
 }
 
-/* Location + Commodity subtle */
 .directory-table tbody td:nth-child(2),
 .directory-table tbody td:nth-child(5) {
     color: #64748b;
     font-size: 0.72rem;
 }
 
-/* Compact status badge inside the table */
 .directory-table .status-badge {
     font-size: 0.6rem;
     padding: 0.2rem 0.5rem;
 }
 
-/* Prominent horizontal scrollbar (WebKit: Chrome, Edge, Safari) */
-.directory-scroll::-webkit-scrollbar {
-    height: 12px;
-}
+.directory-scroll::-webkit-scrollbar { height: 12px; }
 .directory-scroll::-webkit-scrollbar-track {
     background: #f1f5f9;
     border-radius: 6px;
@@ -760,4 +750,90 @@ main { animation: page-enter 0.28s ease-out both; }
     .directory-pagination-controls {
         justify-content: center;
     }
+}
+
+/* ============================================================
+   DELETE BUTTON — inside Action column
+   ============================================================ */
+.directory-table tbody td:nth-child(13) {
+    min-width: 160px;
+}
+
+.directory-table .delete-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    color: #e11d48;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: inherit;
+    flex-shrink: 0;
+}
+
+.directory-table .delete-btn:hover {
+    color: #ffffff;
+    background: #e11d48;
+    border-color: #e11d48;
+    transform: scale(1.05);
+}
+
+.directory-table .delete-btn:active { transform: scale(0.95); }
+
+.directory-table .delete-btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.2);
+}
+
+/* ============================================================
+   MODAL ACTION BUTTONS (delete confirm)
+   ============================================================ */
+.modal-actions {
+    display: flex;
+    border-top: 1px solid #f1f5f9;
+}
+
+.modal-btn {
+    flex: 1 1 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    padding: 0.85rem 1rem;
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 700;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.modal-btn--cancel {
+    color: #475569;
+    border-right: 1px solid #f1f5f9;
+}
+.modal-btn--cancel:hover {
+    background: #f8fafc;
+    color: #0f172a;
+}
+
+.modal-btn--danger {
+    color: #ffffff;
+    background: #e11d48;
+}
+.modal-btn--danger:hover {
+    background: #be123c;
+}
+.modal-btn--danger:active {
+    background: #9f1239;
+}
+.modal-btn--danger:disabled {
+    opacity: 0.7;
+    cursor: wait;
 }

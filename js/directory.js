@@ -1,5 +1,5 @@
 // ============================================================
-// DIRECTORY PAGE — Supabase + Realtime + safe import + pagination
+// DIRECTORY PAGE — Supabase + Realtime + safe import + pagination + delete
 // ============================================================
 (function () {
     'use strict';
@@ -18,7 +18,12 @@
     // ------------------------------------------------------------
     const PAGE_SIZE = 25;
     let currentPage = 1;
-    let filteredData = [];   // full filtered dataset (before pagination slice)
+    let filteredData = [];
+
+    // ------------------------------------------------------------
+    // Delete state
+    // ------------------------------------------------------------
+    let deleteTargetId = null;
 
     function getClient() {
         return window.supabaseClient ||
@@ -144,6 +149,9 @@
             const startDate        = formatDateDisplay(p.startDate);
             const endDate          = formatDateDisplay(p.endDate);
 
+            // Safe name for the onclick attribute (escape single quotes)
+            const safeName = String(p.name || '').replace(/'/g, "\\'");
+
             return `
                 <tr data-id="${p.id}">
                     <td class="font-bold text-ink-900">${esc(p.name)}</td>
@@ -165,10 +173,18 @@
                     <td class="text-center text-ink-500">${esc(endDate)}</td>
                     <td class="text-center"><span class="status-badge ${s.css}">${s.label}</span></td>
                     <td class="text-center">
-                        <a href="./annual-volume.html?id=${p.id}"
-                           class="text-[11px] font-bold text-enro-700 hover:text-enro-900 hover:underline whitespace-nowrap">
-                            View Ledger
-                        </a>
+                        <div class="flex items-center justify-center gap-1.5">
+                            <a href="./annual-volume.html?id=${p.id}"
+                               class="text-[11px] font-bold text-enro-700 hover:text-enro-900 hover:underline whitespace-nowrap">
+                                View Ledger
+                            </a>
+                            <button type="button"
+                                    onclick="openDeleteModal('${p.id}', '${safeName}')"
+                                    title="Delete record"
+                                    class="delete-btn">
+                                <i class="fa-solid fa-trash text-[10px]"></i>
+                            </button>
+                        </div>
                     </td>
                 </tr>
             `;
@@ -338,6 +354,68 @@
 
         if (typeof window.showToast === 'function') {
             window.showToast('Permittee record added successfully.', 'success');
+        }
+    }
+
+    // ------------------------------------------------------------
+    // DELETE PERMIT
+    // ------------------------------------------------------------
+    function openDeleteModal(id, name) {
+        deleteTargetId = id;
+        const nameEl = document.getElementById('delete-target-name');
+        if (nameEl) nameEl.innerText = name || 'this record';
+        const modal = document.getElementById('modal-delete-confirm');
+        if (modal) modal.classList.add('active');
+    }
+
+    function closeDeleteModal() {
+        deleteTargetId = null;
+        const modal = document.getElementById('modal-delete-confirm');
+        if (modal) modal.classList.remove('active');
+    }
+
+    async function confirmDelete() {
+        if (!deleteTargetId) return;
+
+        const client = getClient();
+        if (!client) {
+            console.error('[Directory] supabaseClient missing.');
+            return;
+        }
+
+        const btn = document.getElementById('delete-confirm-btn');
+        const originalHTML = btn ? btn.innerHTML : 'Delete';
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = 'Deleting...';
+        }
+
+        const { error } = await client
+            .from('permittees')
+            .delete()
+            .eq('id', deleteTargetId);
+
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
+        }
+
+        if (error) {
+            console.error('[Directory] delete error:', error);
+            const msg = error.message || error.details || error.hint || JSON.stringify(error);
+            if (typeof window.showToast === 'function') {
+                window.showToast('Failed to delete record: ' + msg, 'error');
+            }
+            return;
+        }
+
+        closeDeleteModal();
+
+        window.permitteesData = await loadPermitteesFromSupabase();
+        filterDirectoryTable();
+
+        if (typeof window.showToast === 'function') {
+            window.showToast('Record deleted successfully.', 'success');
         }
     }
 
@@ -554,6 +632,9 @@
     window.goToPage              = goToPage;
     window.goToPrevPage          = goToPrevPage;
     window.goToNextPage          = goToNextPage;
+    window.openDeleteModal       = openDeleteModal;
+    window.closeDeleteModal      = closeDeleteModal;
+    window.confirmDelete         = confirmDelete;
 
     // ------------------------------------------------------------
     // Boot

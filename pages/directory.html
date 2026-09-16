@@ -115,6 +115,34 @@
     </div>
 </main>
 
+<!-- ============ DELETE CONFIRM MODAL ============ -->
+<div id="modal-delete-confirm" class="modal-overlay">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+        <div class="p-5 text-center">
+            <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-rose-50 flex items-center justify-center">
+                <i class="fa-solid fa-triangle-exclamation text-rose-500 text-lg"></i>
+            </div>
+            <h3 class="text-sm font-bold text-ink-900">Delete this record?</h3>
+            <p class="text-[11px] text-ink-500 mt-1.5 leading-relaxed">
+                You're about to permanently delete<br>
+                <strong id="delete-target-name" class="text-ink-800">—</strong>
+            </p>
+            <p class="text-[10px] text-rose-600 mt-2 font-semibold">
+                This will also delete all linked transactions. This cannot be undone.
+            </p>
+        </div>
+        <div class="modal-actions">
+            <button type="button" onclick="closeDeleteModal()" class="modal-btn modal-btn--cancel">
+                Cancel
+            </button>
+            <button type="button" id="delete-confirm-btn" onclick="confirmDelete()" class="modal-btn modal-btn--danger">
+                <i class="fa-solid fa-trash text-[10px] mr-1"></i>
+                Delete
+            </button>
+        </div>
+    </div>
+</div>
+
 <div id="modal-add-entry" class="modal-overlay">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
         <div class="px-5 py-4 border-b border-ink-100 flex items-center justify-between shrink-0">
