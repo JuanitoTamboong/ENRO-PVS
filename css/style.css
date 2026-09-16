@@ -1078,3 +1078,79 @@ main { animation: page-enter 0.28s ease-out both; }
     background: #f8fafc;
     box-shadow: 2px 0 4px -2px rgba(0,0,0,0.06);
 }
+
+/* ============================================================
+   ANNUAL VOLUME TABLE — column width alignment
+   ============================================================ */
+
+/* Annual list table — 6 columns */
+.annual-list-table {
+    min-width: 1000px;
+    table-layout: fixed;
+}
+
+.annual-list-table th:nth-child(1),
+.annual-list-table td:nth-child(1) {
+    width: 30%;
+    text-align: left;
+}
+
+.annual-list-table th:nth-child(2),
+.annual-list-table td:nth-child(2) {
+    width: 20%;
+    text-align: left;
+}
+
+.annual-list-table th:nth-child(3),
+.annual-list-table td:nth-child(3) {
+    width: 18%;
+    text-align: right;
+}
+
+.annual-list-table th:nth-child(4),
+.annual-list-table td:nth-child(4) {
+    width: 15%;
+    text-align: right;
+}
+
+.annual-list-table th:nth-child(5),
+.annual-list-table td:nth-child(5) {
+    width: 10%;
+    text-align: center;
+}
+
+.annual-list-table th:nth-child(6),
+.annual-list-table td:nth-child(6) {
+    width: 7%;
+    text-align: center;
+}
+
+/* Annual ledger table — 8 columns */
+.annual-ledger-table {
+    min-width: 1200px;
+    table-layout: fixed;
+}
+
+.annual-ledger-table th:nth-child(1),
+.annual-ledger-table td:nth-child(1) { width: 12%; text-align: left; }
+
+.annual-ledger-table th:nth-child(2),
+.annual-ledger-table td:nth-child(2) { width: 12%; text-align: right; }
+
+.annual-ledger-table th:nth-child(3),
+.annual-ledger-table td:nth-child(3) { width: 12%; text-align: left; }
+
+.annual-ledger-table th:nth-child(4),
+.annual-ledger-table td:nth-child(4) { width: 12%; text-align: right; }
+
+.annual-ledger-table th:nth-child(5),
+.annual-ledger-table td:nth-child(5) { width: 12%; text-align: left; }
+
+.annual-ledger-table th:nth-child(6),
+.annual-ledger-table td:nth-child(6) { width: 16%; text-align: left; }
+
+.annual-ledger-table th:nth-child(7),
+.annual-ledger-table td:nth-child(7) { width: 12%; text-align: right; }
+
+.annual-ledger-table th:nth-child(8),
+.annual-ledger-table td:nth-child(8) { width: 12%; text-align: right; }
