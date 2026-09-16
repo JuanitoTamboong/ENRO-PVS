@@ -25,6 +25,11 @@
     // ------------------------------------------------------------
     let deleteTargetId = null;
 
+    // ------------------------------------------------------------
+    // Delete All phrase
+    // ------------------------------------------------------------
+    const DELETE_ALL_PHRASE = 'DELETE ALL';
+
     function getClient() {
         return window.supabaseClient ||
                (typeof supabaseClient !== 'undefined' ? supabaseClient : null);
@@ -358,7 +363,7 @@
     }
 
     // ------------------------------------------------------------
-    // DELETE PERMIT
+    // DELETE ONE PERMIT
     // ------------------------------------------------------------
     function openDeleteModal(id, name) {
         deleteTargetId = id;
@@ -416,6 +421,91 @@
 
         if (typeof window.showToast === 'function') {
             window.showToast('Record deleted successfully.', 'success');
+        }
+    }
+
+    // ------------------------------------------------------------
+    // DELETE ALL PERMITTEES
+    // ------------------------------------------------------------
+    function openDeleteAllModal() {
+        const countEl = document.getElementById('delete-all-count');
+        if (countEl) countEl.innerText = (window.permitteesData || []).length;
+
+        const input = document.getElementById('delete-all-confirm-input');
+        if (input) input.value = '';
+
+        const btn = document.getElementById('delete-all-confirm-btn');
+        if (btn) btn.disabled = true;
+
+        const modal = document.getElementById('modal-delete-all');
+        if (modal) modal.classList.add('active');
+
+        // Wire up live input validation (only once)
+        if (input && !input.__wired) {
+            input.addEventListener('input', function () {
+                const confirmBtn = document.getElementById('delete-all-confirm-btn');
+                if (confirmBtn) confirmBtn.disabled =
+                    this.value.trim().toUpperCase() !== DELETE_ALL_PHRASE;
+            });
+            input.__wired = true;
+        }
+    }
+
+    function closeDeleteAllModal() {
+        const modal = document.getElementById('modal-delete-all');
+        if (modal) modal.classList.remove('active');
+        const input = document.getElementById('delete-all-confirm-input');
+        if (input) input.value = '';
+        const btn = document.getElementById('delete-all-confirm-btn');
+        if (btn) btn.disabled = true;
+    }
+
+    async function confirmDeleteAll() {
+        const input = document.getElementById('delete-all-confirm-input');
+        const typed = input ? input.value.trim().toUpperCase() : '';
+        if (typed !== DELETE_ALL_PHRASE) return;
+
+        const client = getClient();
+        if (!client) {
+            console.error('[Directory] supabaseClient missing.');
+            return;
+        }
+
+        const btn = document.getElementById('delete-all-confirm-btn');
+        const originalHTML = btn ? btn.innerHTML : 'Delete All';
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = 'Deleting...';
+        }
+
+        // Delete every row. The `.neq` on a UUID that will never exist
+        // is a safe way to force a "match all" delete without listing ids.
+        const { error } = await client
+            .from('permittees')
+            .delete()
+            .neq('id', '00000000-0000-0000-0000-000000000000');
+
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
+        }
+
+        if (error) {
+            console.error('[Directory] delete-all error:', error);
+            const msg = error.message || error.details || error.hint || JSON.stringify(error);
+            if (typeof window.showToast === 'function') {
+                window.showToast('Failed to delete all records: ' + msg, 'error');
+            }
+            return;
+        }
+
+        closeDeleteAllModal();
+
+        window.permitteesData = await loadPermitteesFromSupabase();
+        filterDirectoryTable();
+
+        if (typeof window.showToast === 'function') {
+            window.showToast('All permittee records deleted.', 'success');
         }
     }
 
@@ -635,6 +725,9 @@
     window.openDeleteModal       = openDeleteModal;
     window.closeDeleteModal      = closeDeleteModal;
     window.confirmDelete         = confirmDelete;
+    window.openDeleteAllModal    = openDeleteAllModal;
+    window.closeDeleteAllModal   = closeDeleteAllModal;
+    window.confirmDeleteAll      = confirmDeleteAll;
 
     // ------------------------------------------------------------
     // Boot

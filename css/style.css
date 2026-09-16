@@ -827,13 +827,31 @@ main { animation: page-enter 0.28s ease-out both; }
     color: #ffffff;
     background: #e11d48;
 }
-.modal-btn--danger:hover {
+.modal-btn--danger:hover:not(:disabled) {
     background: #be123c;
 }
-.modal-btn--danger:active {
+.modal-btn--danger:active:not(:disabled) {
     background: #9f1239;
 }
+
+/* Disabled state — used by Delete All until user types the phrase */
 .modal-btn--danger:disabled {
-    opacity: 0.7;
-    cursor: wait;
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: #e11d48;
+}
+
+/* ============================================================
+   DELETE ALL — confirm modal extras
+   ============================================================ */
+#delete-all-confirm-input {
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+#delete-all-confirm-input:focus {
+    border-color: #e11d48;
+    box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.12);
+}
+#delete-all-confirm-input::placeholder {
+    color: #fda4af;
+    letter-spacing: 0.05em;
 }
