@@ -103,6 +103,7 @@
             permitNo:     row.permit_no || '',
             type:         row.type || '',
             commodity:    row.commodity || '',
+            area:         row.area || '',          // ← FIX: added area
             rate:         row.rate || '',
             allowedVol:   Number(row.allowed_vol) || 0,
             remainingVol: Number(row.remaining_vol) || 0,
