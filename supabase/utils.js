@@ -1,4 +1,3 @@
-
 (function () {
     'use strict';
 
@@ -56,26 +55,21 @@
         const allowed   = Number(p.allowedVol)   || 0;
         const remaining = Number(p.remainingVol) || 0;
 
-        // 1. Expired
         if (p.endDate) {
             const end = new Date(p.endDate);
             if (!isNaN(end.getTime()) && end.getTime() < Date.now())
                 return { label: 'Expired',          css: 'bg-ink-100 text-ink-600 border-ink-200' };
         }
 
-        // 2. Fully Consumed
         if (allowed > 0 && remaining === 0)
             return { label: 'Fully Consumed',       css: 'bg-rose-50 text-rose-700 border-rose-200' };
 
-        // 3. Nearly Exhausted
         if (allowed > 0 && remaining <= 100)
             return { label: 'Nearly Exhausted',     css: 'bg-amber-50 text-amber-700 border-amber-200' };
 
-        // 4. Low Production (< 15% consumed)
         if (allowed > 0 && remaining < allowed && (remaining / allowed) > 0.85)
             return { label: 'Low Production',       css: 'bg-blue-50 text-blue-700 border-blue-200' };
 
-        // 5. Active
         return { label: 'Active',                   css: 'bg-enro-50 text-enro-700 border-enro-200' };
     };
 
@@ -100,7 +94,7 @@
             permitNo:     row.permit_no || '',
             type:         row.type || '',
             commodity:    row.commodity || '',
-            area:         row.area || '',          // ← FIX: added area
+            area:         row.area || '',
             rate:         row.rate || '',
             allowedVol:   Number(row.allowed_vol) || 0,
             remainingVol: Number(row.remaining_vol) || 0,
@@ -139,7 +133,22 @@
 
     window.handleLogout = async function () {
         const client = window.getClient();
-        if (client) await client.auth.signOut();
+
+        if (client) {
+            try {
+                const { data: { session } } = await client.auth.getSession();
+                if (session?.user?.email) {
+                    await client.rpc('log_auth_event', {
+                        p_action:     'LOGOUT',
+                        p_email:      session.user.email,
+                        p_user_agent: navigator.userAgent
+                    });
+                }
+            } catch (_) { /* ignore */ }
+
+            await client.auth.signOut();
+        }
+
         window.location.href = '../index.html';
     };
 
@@ -186,9 +195,10 @@
 
         const file = window.location.pathname.split('/').pop();
         const active = {
-            'dashboard.html': 'hub',
-            'directory.html': 'directory',
-            'annual-volume.html': 'annual-volume'
+            'dashboard.html':     'hub',
+            'directory.html':     'directory',
+            'annual-volume.html': 'annual-volume',
+            'activity-logs.html': 'activity-logs'
         }[file] || 'hub';
         const cls = (key) => key === active ? 'nav-link active' : 'nav-link';
 
@@ -216,6 +226,9 @@
                         <a href="./annual-volume.html" class="${cls('annual-volume')}">
                             <i class="fa-solid fa-scale-balanced mr-1.5 text-xs"></i>Annual Volume
                         </a>
+                        <a href="./activity-logs.html" class="${cls('activity-logs')}">
+                            <i class="fa-solid fa-clock-rotate-left mr-1.5 text-xs"></i>Activity Logs
+                        </a>
                     </nav>
 
                     <div class="flex items-center gap-2">
@@ -240,6 +253,7 @@
                 <a href="./dashboard.html" class="block w-full text-left px-3 py-2 text-sm font-semibold text-enro-100 hover:bg-enro-800 rounded-lg">Dashboard</a>
                 <a href="./directory.html" class="block w-full text-left px-3 py-2 text-sm font-semibold text-enro-100 hover:bg-enro-800 rounded-lg">Directory</a>
                 <a href="./annual-volume.html" class="block w-full text-left px-3 py-2 text-sm font-semibold text-enro-100 hover:bg-enro-800 rounded-lg">Annual Volume</a>
+                <a href="./activity-logs.html" class="block w-full text-left px-3 py-2 text-sm font-semibold text-enro-100 hover:bg-enro-800 rounded-lg">Activity Logs</a>
             </div>
         </header>`;
     };

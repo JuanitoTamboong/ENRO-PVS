@@ -1,7 +1,12 @@
 // ============================================================
-// ANNUAL VOLUME PAGE — DB-backed ledger with atomic transactions
+// ANNUAL VOLUME PAGE — DB-backed ledger with pagination
 // ============================================================
 let selectedPermitteeId = null;
+
+// Pagination state for the permittee list
+let annualAllPermittees = [];
+let annualCurrentPage = 1;
+const ANNUAL_PAGE_SIZE = 25;
 
 function getClient() {
     return window.supabaseClient ||
@@ -49,7 +54,7 @@ async function reloadPermitteesFromDb() {
 }
 
 // ------------------------------------------------------------
-// Bootstrap — robust, waits for client + DOM
+// Bootstrap
 // ------------------------------------------------------------
 async function bootAnnualPage() {
     const client = getClient();
@@ -101,13 +106,15 @@ function backToAnnualList() {
 }
 
 // ------------------------------------------------------------
-// Level 1: List
+// Level 1: List (paginated)
 // ------------------------------------------------------------
 function renderAnnualLevel1List(data) {
+    annualAllPermittees = data || [];
+
     const tbody = document.getElementById('annual-list-tbody');
     if (!tbody) return;
 
-    if (!data || data.length === 0) {
+    if (annualAllPermittees.length === 0) {
         tbody.innerHTML = `
             <tr><td colspan="6">
                 <div class="empty-state">
@@ -115,14 +122,22 @@ function renderAnnualLevel1List(data) {
                     No permittees match your search.
                 </div>
             </td></tr>`;
+        renderAnnualPagination(0);
         return;
     }
+
+    const totalPages = Math.max(1, Math.ceil(annualAllPermittees.length / ANNUAL_PAGE_SIZE));
+    if (annualCurrentPage > totalPages) annualCurrentPage = totalPages;
+    if (annualCurrentPage < 1) annualCurrentPage = 1;
+
+    const start = (annualCurrentPage - 1) * ANNUAL_PAGE_SIZE;
+    const pageRows = annualAllPermittees.slice(start, start + ANNUAL_PAGE_SIZE);
 
     const stat = window.getStatusInfo || ((p) => ({ label: p.status || 'Active', css: '' }));
     const esc  = window.escapeHtml    || ((s) => s);
     const fmt  = window.formatNumber  || ((n) => n);
 
-    tbody.innerHTML = data.map(p => {
+    tbody.innerHTML = pageRows.map(p => {
         const s = stat(p);
         return `
             <tr class="cursor-pointer" onclick="openAnnualLedgerById('${p.id}')">
@@ -139,10 +154,13 @@ function renderAnnualLevel1List(data) {
             </tr>
         `;
     }).join('');
+
+    renderAnnualPagination(annualAllPermittees.length);
 }
 
 function filterAnnualListTable() {
     const q = (document.getElementById('annual-list-search').value || '').toLowerCase();
+    annualCurrentPage = 1;
     renderAnnualLevel1List(
         (window.permitteesData || []).filter(p =>
             (p.name     || '').toLowerCase().includes(q) ||
@@ -156,6 +174,67 @@ function openAnnualLedgerById(id) {
     history.replaceState(null, '', `./annual-volume.html?id=${selectedPermitteeId}`);
     showLedgerView();
 }
+
+// ------------------------------------------------------------
+// Pagination
+// ------------------------------------------------------------
+function renderAnnualPagination(totalRows) {
+    const rangeEl = document.getElementById('annual-pagination-range');
+    const totalEl = document.getElementById('annual-pagination-total');
+    const prevBtn = document.getElementById('annual-pagination-prev');
+    const nextBtn = document.getElementById('annual-pagination-next');
+    const pagesEl = document.getElementById('annual-pagination-pages');
+
+    if (totalRows === 0) {
+        if (rangeEl) rangeEl.innerText = '0–0';
+        if (totalEl) totalEl.innerText = '0';
+        if (prevBtn) prevBtn.disabled = true;
+        if (nextBtn) nextBtn.disabled = true;
+        if (pagesEl)  pagesEl.innerHTML = '';
+        return;
+    }
+
+    const totalPages = Math.max(1, Math.ceil(totalRows / ANNUAL_PAGE_SIZE));
+    const start = (annualCurrentPage - 1) * ANNUAL_PAGE_SIZE + 1;
+    const end   = Math.min(annualCurrentPage * ANNUAL_PAGE_SIZE, totalRows);
+
+    if (rangeEl) rangeEl.innerText = `${start}–${end}`;
+    if (totalEl) totalEl.innerText = totalRows;
+    if (prevBtn) prevBtn.disabled = (annualCurrentPage === 1);
+    if (nextBtn) nextBtn.disabled = (annualCurrentPage === totalPages);
+
+    if (pagesEl) {
+        const pages = [];
+        const push = (n) => pages.push(
+            `<button class="pagination-page ${n === annualCurrentPage ? 'is-active' : ''}"
+                     onclick="goToAnnualPage(${n})">${n}</button>`
+        );
+        const pushEllipsis = () => pages.push(`<span class="pagination-ellipsis">…</span>`);
+
+        if (totalPages <= 7) {
+            for (let i = 1; i <= totalPages; i++) push(i);
+        } else {
+            push(1);
+            if (annualCurrentPage > 3) pushEllipsis();
+            const from = Math.max(2, annualCurrentPage - 1);
+            const to   = Math.min(totalPages - 1, annualCurrentPage + 1);
+            for (let i = from; i <= to; i++) push(i);
+            if (annualCurrentPage < totalPages - 2) pushEllipsis();
+            push(totalPages);
+        }
+        pagesEl.innerHTML = pages.join('');
+    }
+}
+
+function goToAnnualPage(n) {
+    const totalPages = Math.max(1, Math.ceil(annualAllPermittees.length / ANNUAL_PAGE_SIZE));
+    if (n < 1 || n > totalPages || n === annualCurrentPage) return;
+    annualCurrentPage = n;
+    renderAnnualLevel1List(annualAllPermittees);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function goToAnnualPrevPage() { goToAnnualPage(annualCurrentPage - 1); }
+function goToAnnualNextPage() { goToAnnualPage(annualCurrentPage + 1); }
 
 // ------------------------------------------------------------
 // Level 2: Ledger
@@ -343,3 +422,6 @@ window.openAnnualLedgerById     = openAnnualLedgerById;
 window.openAddTransactionModal  = openAddTransactionModal;
 window.closeAddTransactionModal = closeAddTransactionModal;
 window.submitTransactionEntry   = submitTransactionEntry;
+window.goToAnnualPage           = goToAnnualPage;
+window.goToAnnualPrevPage       = goToAnnualPrevPage;
+window.goToAnnualNextPage       = goToAnnualNextPage;

@@ -40,6 +40,19 @@ function getAccountRole(user) {
     return normalizeLoginRole(user?.app_metadata?.role || user?.user_metadata?.role);
 }
 
+// ------------------------------------------------------------
+// Log auth events (best-effort, never blocks login)
+// ------------------------------------------------------------
+async function logAuthEvent(client, action, email, extra) {
+    try {
+        await client.rpc('log_auth_event', {
+            p_action:     action,
+            p_email:      email,
+            p_user_agent: navigator.userAgent + (extra ? ` [${extra}]` : '')
+        });
+    } catch (_) { /* ignore logging errors */ }
+}
+
 function selectLoginRole(role) {
     currentLoginRole = role;
 
@@ -97,7 +110,10 @@ async function handleLogin(e) {
         return;
     }
 
-    if (!emailInput.value.trim() || !passwordInput.value) {
+    const email = emailInput.value.trim();
+    const password = passwordInput.value;
+
+    if (!email || !password) {
         error.innerText = 'Please enter both email and password.';
         error.classList.remove('hidden');
         button.disabled = false;
@@ -106,16 +122,20 @@ async function handleLogin(e) {
 
     try {
         const { error: authError } = await client.auth.signInWithPassword({
-            email: emailInput.value.trim(),
-            password: passwordInput.value
+            email: email,
+            password: password
         });
 
-        if (authError) throw authError;
+        if (authError) {
+            await logAuthEvent(client, 'FAILED_LOGIN', email);
+            throw authError;
+        }
 
         const { data: { user } } = await client.auth.getUser();
         const accountRole = getAccountRole(user);
 
         if (accountRole && accountRole !== currentLoginRole) {
+            await logAuthEvent(client, 'FAILED_LOGIN', email, 'role mismatch');
             await client.auth.signOut();
             throw new Error(
                 `This account is not registered as ${
@@ -123,6 +143,8 @@ async function handleLogin(e) {
                 }.`
             );
         }
+
+        await logAuthEvent(client, 'LOGIN', email);
 
         sessionStorage.setItem('enro_user_role', currentLoginRole);
         showToast(

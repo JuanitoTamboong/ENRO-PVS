@@ -375,14 +375,6 @@ html { background: #f8fafc; }
 /* ============================================================
    Shared shell / pages styles
    ============================================================ */
-@view-transition { navigation: auto; }
-
-::view-transition-old(root),
-::view-transition-new(root) {
-    animation-duration: 0.18s;
-    animation-timing-function: ease-out;
-}
-
 #app-header { min-height: 56px; }
 
 @keyframes page-enter {
@@ -556,7 +548,7 @@ main { animation: page-enter 0.28s ease-out both; }
 .stat-divider:last-child { border-right: none; }
 
 /* ============================================================
-   DIRECTORY TABLE — 13 columns with horizontal scroll
+   DIRECTORY + ANNUAL TABLE — shared scroll + styling
    ============================================================ */
 
 .directory-scroll {
@@ -637,7 +629,7 @@ main { animation: page-enter 0.28s ease-out both; }
 }
 
 /* ============================================================
-   DIRECTORY PAGINATION
+   PAGINATION — Directory + Annual
    ============================================================ */
 .directory-pagination {
     display: flex;
@@ -753,7 +745,7 @@ main { animation: page-enter 0.28s ease-out both; }
 }
 
 /* ============================================================
-   DELETE BUTTON — inside Action column
+   DELETE BUTTON
    ============================================================ */
 .directory-table tbody td:nth-child(13) {
     min-width: 160px;
@@ -791,7 +783,7 @@ main { animation: page-enter 0.28s ease-out both; }
 }
 
 /* ============================================================
-   MODAL ACTION BUTTONS (delete confirm)
+   MODAL ACTION BUTTONS
    ============================================================ */
 .modal-actions {
     display: flex;
@@ -834,16 +826,12 @@ main { animation: page-enter 0.28s ease-out both; }
     background: #9f1239;
 }
 
-/* Disabled state — used by Delete All until user types the phrase */
 .modal-btn--danger:disabled {
     opacity: 0.4;
     cursor: not-allowed;
     background: #e11d48;
 }
 
-/* ============================================================
-   DELETE ALL — confirm modal extras
-   ============================================================ */
 #delete-all-confirm-input {
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
@@ -857,10 +845,8 @@ main { animation: page-enter 0.28s ease-out both; }
 }
 
 /* ============================================================
-   MOBILE RESPONSIVE — Directory page
+   MOBILE — Directory toolbar + filters
    ============================================================ */
-
-/* Toolbar (Import / Export / Delete All / New Entry) */
 .directory-toolbar {
     display: flex;
     flex-wrap: wrap;
@@ -881,7 +867,6 @@ main { animation: page-enter 0.28s ease-out both; }
     border-color: #fda4af;
 }
 
-/* Filter row (status + count badge) */
 .directory-filter-row {
     display: flex;
     flex-wrap: wrap;
@@ -908,7 +893,6 @@ main { animation: page-enter 0.28s ease-out both; }
     white-space: nowrap;
 }
 
-/* On small screens: 2-column grid, full-width buttons */
 @media (max-width: 640px) {
     .directory-toolbar {
         display: grid;
@@ -926,7 +910,7 @@ main { animation: page-enter 0.28s ease-out both; }
     }
 
     .directory-toolbar-btn--primary {
-        grid-column: 1 / -1;   /* New Permit Entry spans full width */
+        grid-column: 1 / -1;
     }
 
     main {
@@ -935,7 +919,6 @@ main { animation: page-enter 0.28s ease-out both; }
         padding-top: 1rem !important;
     }
 
-    /* Make status select stretch full width on mobile */
     .directory-filter-row {
         flex-direction: column;
         align-items: stretch;
@@ -952,7 +935,6 @@ main { animation: page-enter 0.28s ease-out both; }
     }
 }
 
-/* Very narrow screens: stack all buttons */
 @media (max-width: 400px) {
     .directory-toolbar {
         grid-template-columns: 1fr;
@@ -962,9 +944,6 @@ main { animation: page-enter 0.28s ease-out both; }
     }
 }
 
-/* ============================================================
-   MOBILE TABLE — Better horizontal scroll
-   ============================================================ */
 @media (max-width: 860px) {
     .directory-table {
         min-width: 1100px;
@@ -986,9 +965,6 @@ main { animation: page-enter 0.28s ease-out both; }
     }
 }
 
-/* ============================================================
-   MOBILE PAGINATION — compact
-   ============================================================ */
 @media (max-width: 640px) {
     .directory-pagination {
         padding: 0.75rem;
@@ -1025,9 +1001,6 @@ main { animation: page-enter 0.28s ease-out both; }
     }
 }
 
-/* ============================================================
-   MOBILE TOAST — full width
-   ============================================================ */
 @media (max-width: 640px) {
     .toast {
         left: 0.75rem;
@@ -1039,7 +1012,7 @@ main { animation: page-enter 0.28s ease-out both; }
 }
 
 /* ============================================================
-   SEARCH INPUT — clean icon + text spacing
+   SEARCH INPUT
    ============================================================ */
 .directory-search-wrap {
     position: relative;
@@ -1059,11 +1032,10 @@ main { animation: page-enter 0.28s ease-out both; }
 }
 
 .directory-search-input {
-    padding-left: 2.5rem !important;   /* 40px — comfortable gap after the icon */
+    padding-left: 2.5rem !important;
     padding-right: 0.875rem;
 }
 
-/* Optional: slightly larger icon on mobile for better tapping visual */
 @media (max-width: 640px) {
     .directory-search-icon {
         left: 1rem;
@@ -1072,4 +1044,37 @@ main { animation: page-enter 0.28s ease-out both; }
     .directory-search-input {
         padding-left: 2.65rem !important;
     }
+}
+
+/* ============================================================
+   ANNUAL VOLUME — pagination + compact rows
+   ============================================================ */
+#annual-list-tbody td,
+#annual-transactions-tbody td {
+    padding: 0.65rem 0.75rem;
+    font-size: 0.76rem;
+}
+
+/* Freeze the "Permittee" column while scrolling */
+#annual-list-tbody td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: #fff;
+    box-shadow: 2px 0 4px -2px rgba(0,0,0,0.06);
+}
+
+/* Ledger table doesn't need sticky first column */
+#annual-transactions-tbody td:first-child {
+    position: static;
+    box-shadow: none;
+}
+
+/* Keep the header of the first column sticky too */
+.directory-table thead th:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 3;
+    background: #f8fafc;
+    box-shadow: 2px 0 4px -2px rgba(0,0,0,0.06);
 }

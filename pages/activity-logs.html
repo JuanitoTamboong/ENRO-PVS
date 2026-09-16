@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ENRO • Activity Logs</title>
+    <link rel="stylesheet" href="../css/tailwind.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="icon" type="image/png" href="../assets/enro-logo.png">
+</head>
+<body class="h-full bg-ink-50 font-sans text-ink-800">
+
+<div id="app-header"></div>
+
+<main class="w-full px-4 sm:px-6 lg:px-8 py-6">
+    <div class="space-y-5">
+
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+            <div>
+                <h1 class="text-xl font-bold text-ink-900">Activity Logs</h1>
+                <p class="text-xs text-ink-500 mt-0.5">Audit trail of all system changes and sign-in events</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                <button onclick="exportLogsToExcel()" class="btn-secondary text-xs">
+                    <i class="fa-solid fa-file-arrow-down text-xs text-enro-700"></i>
+                    <span>Export CSV</span>
+                </button>
+                <button onclick="openClearLogsModal()" class="btn-secondary text-xs"
+                        style="color:#e11d48;border-color:#fecdd3;">
+                    <i class="fa-solid fa-trash-can text-xs text-rose-600"></i>
+                    <span>Clear Logs</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Search + filters -->
+        <div class="bg-white border border-ink-200 rounded-xl p-3">
+            <div class="directory-search-wrap">
+                <i class="fa-solid fa-magnifying-glass directory-search-icon"></i>
+                <input type="text" id="log-search-input" oninput="filterLogs()"
+                    class="input-field directory-search-input"
+                    placeholder="Search by entity name, user, or action...">
+            </div>
+        </div>
+
+        <div class="directory-filter-row">
+            <select id="log-action-filter" onchange="filterLogs()" class="input-field text-xs font-semibold pr-8">
+                <option value="">All Actions</option>
+                <optgroup label="Authentication">
+                    <option value="LOGIN">Signed in</option>
+                    <option value="LOGOUT">Signed out</option>
+                    <option value="FAILED_LOGIN">Login failed</option>
+                </optgroup>
+                <optgroup label="Data changes">
+                    <option value="INSERT">Created</option>
+                    <option value="UPDATE">Updated</option>
+                    <option value="DELETE">Deleted</option>
+                </optgroup>
+            </select>
+
+            <select id="log-entity-filter" onchange="filterLogs()" class="input-field text-xs font-semibold pr-8">
+                <option value="">All Entities</option>
+                <option value="auth">Authentication</option>
+                <option value="permittees">Permittees</option>
+                <option value="transactions">Transactions</option>
+            </select>
+
+            <div class="directory-count-badge">
+                <span id="log-count-badge">0 entries</span>
+            </div>
+        </div>
+
+        <!-- Logs table -->
+        <div class="bg-white border border-ink-200 rounded-xl overflow-hidden">
+            <div class="directory-scroll">
+                <table class="directory-table" style="min-width: 1200px;">
+                    <thead>
+                        <tr>
+                            <th>When</th>
+                            <th>Action</th>
+                            <th>Entity</th>
+                            <th>Record</th>
+                            <th>Performed By</th>
+                            <th class="text-center">Details</th>
+                        </tr>
+                    </thead>
+                    <tbody id="activity-logs-tbody"></tbody>
+                </table>
+            </div>
+
+            <div class="directory-pagination">
+                <div class="directory-pagination-info">
+                    Showing <span id="pagination-range">0–0</span> of
+                    <span id="pagination-total">0</span> entries
+                </div>
+                <div class="directory-pagination-controls">
+                    <button id="pagination-prev" class="pagination-btn" onclick="goToPrevPage()" disabled>
+                        <i class="fa-solid fa-chevron-left text-[10px]"></i>
+                        <span>Prev</span>
+                    </button>
+                    <span id="pagination-pages" class="pagination-pages"></span>
+                    <button id="pagination-next" class="pagination-btn" onclick="goToNextPage()" disabled>
+                        <span>Next</span>
+                        <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- ============ DETAILS MODAL ============ -->
+<div id="modal-log-details" class="modal-overlay">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
+        <div class="px-5 py-4 border-b border-ink-100 flex items-center justify-between shrink-0">
+            <div>
+                <h3 class="text-sm font-bold text-ink-900">Log Entry Details</h3>
+                <p class="text-[11px] text-ink-400 mt-0.5" id="log-details-subtitle">—</p>
+            </div>
+            <button onclick="closeLogDetailsModal()" class="w-7 h-7 flex items-center justify-center text-ink-400 hover:text-ink-700 hover:bg-ink-100 rounded-lg transition">
+                <i class="fa-solid fa-xmark text-sm"></i>
+            </button>
+        </div>
+        <div class="p-5 overflow-y-auto">
+            <pre id="log-details-json" class="text-[11px] font-mono bg-ink-50 border border-ink-200 rounded-lg p-3 overflow-x-auto"></pre>
+        </div>
+        <div class="modal-actions">
+            <button type="button" onclick="closeLogDetailsModal()" class="modal-btn modal-btn--cancel">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ============ CLEAR LOGS MODAL ============ -->
+<div id="modal-clear-logs" class="modal-overlay">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div class="p-5">
+            <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-rose-50 flex items-center justify-center">
+                <i class="fa-solid fa-triangle-exclamation text-rose-500 text-lg"></i>
+            </div>
+            <h3 class="text-sm font-bold text-ink-900 text-center">Clear ALL activity logs?</h3>
+            <p class="text-[11px] text-ink-500 mt-2 leading-relaxed text-center">
+                You are about to permanently delete <strong id="clear-logs-count" class="text-ink-800">0</strong> log entries.
+                This cannot be undone.
+            </p>
+            <div class="mt-4 p-3 bg-rose-50 border border-rose-200 rounded-lg">
+                <label class="block text-[10px] font-bold text-rose-700 uppercase tracking-wider mb-1.5">
+                    Type <span class="font-mono">CLEAR LOGS</span> to confirm
+                </label>
+                <input type="text" id="clear-logs-confirm-input"
+                       class="w-full px-3 py-2 text-xs font-mono border border-rose-300 rounded-lg focus:outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-100"
+                       placeholder="CLEAR LOGS" autocomplete="off">
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button type="button" onclick="closeClearLogsModal()" class="modal-btn modal-btn--cancel">
+                Cancel
+            </button>
+            <button type="button" id="clear-logs-confirm-btn"
+                    onclick="confirmClearLogs()"
+                    class="modal-btn modal-btn--danger" disabled>
+                <i class="fa-solid fa-trash-can text-[10px] mr-1"></i>
+                Clear Logs
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="toast" class="toast">
+    <div id="toast-icon" class="shrink-0">
+        <i class="fa-solid fa-circle-check text-enro-400 text-lg"></i>
+    </div>
+    <div class="flex-1 min-w-0">
+        <h5 id="toast-title" class="font-bold text-xs text-white">Success</h5>
+        <p id="toast-message" class="text-[11px] text-ink-300 mt-0.5 leading-relaxed">Operation completed.</p>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../supabase/supabase-client.js"></script>
+<script src="../supabase/utils.js"></script>
+<script src="../js/activity-logs.js"></script>
+
+</body>
+</html>

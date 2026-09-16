@@ -14,9 +14,12 @@
 
 <div id="app-header"></div>
 
-<main class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+<main class="w-full px-4 sm:px-6 lg:px-8 py-6">
     <div class="space-y-5">
 
+        <!-- ============================================================
+             LEVEL 1: PERMITTEE LIST (with pagination)
+             ============================================================ -->
         <div id="annual-level-1-list" class="space-y-5">
             <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
                 <div>
@@ -34,12 +37,12 @@
             </div>
 
             <div class="bg-white border border-ink-200 rounded-xl overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="w-full data-table">
+                <div class="directory-scroll">
+                    <table class="directory-table" style="min-width: 1100px;">
                         <thead>
                             <tr>
-                                <th class="text-left">Permittee</th>
-                                <th class="text-left">Permit No</th>
+                                <th>Permittee</th>
+                                <th>Permit No</th>
                                 <th class="text-right">Remaining Volume</th>
                                 <th class="text-right">Allowed Volume</th>
                                 <th class="text-center">Status</th>
@@ -49,9 +52,31 @@
                         <tbody id="annual-list-tbody"></tbody>
                     </table>
                 </div>
+
+                <!-- PAGINATION BAR -->
+                <div class="directory-pagination">
+                    <div class="directory-pagination-info">
+                        Showing <span id="annual-pagination-range">0–0</span> of
+                        <span id="annual-pagination-total">0</span> entries
+                    </div>
+                    <div class="directory-pagination-controls">
+                        <button id="annual-pagination-prev" class="pagination-btn" onclick="goToAnnualPrevPage()" disabled>
+                            <i class="fa-solid fa-chevron-left text-[10px]"></i>
+                            <span>Prev</span>
+                        </button>
+                        <span id="annual-pagination-pages" class="pagination-pages"></span>
+                        <button id="annual-pagination-next" class="pagination-btn" onclick="goToAnnualNextPage()" disabled>
+                            <span>Next</span>
+                            <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 
+        <!-- ============================================================
+             LEVEL 2: LEDGER VIEW
+             ============================================================ -->
         <div id="annual-level-2-ledger" class="hidden space-y-5">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div class="breadcrumb">
@@ -119,16 +144,16 @@
                     </button>
                 </div>
 
-                <div class="overflow-x-auto">
-                    <table class="w-full data-table">
+                <div class="directory-scroll">
+                    <table class="directory-table" style="min-width: 1200px;">
                         <thead>
                             <tr>
-                                <th class="text-left">Date</th>
+                                <th>Date</th>
                                 <th class="text-right">Volume (cu.m)</th>
-                                <th class="text-left">DR #</th>
+                                <th>DR #</th>
                                 <th class="text-right">Amount (₱)</th>
-                                <th class="text-left">OP #</th>
-                                <th class="text-left">Truck / Plate</th>
+                                <th>OP #</th>
+                                <th>Truck / Plate</th>
                                 <th class="text-right">Prev. Balance</th>
                                 <th class="text-right">New Balance</th>
                             </tr>
@@ -141,6 +166,9 @@
     </div>
 </main>
 
+<!-- ============================================================
+     ADD TRANSACTION MODAL
+     ============================================================ -->
 <div id="modal-add-tx" class="modal-overlay">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden">
         <div class="px-5 py-4 border-b border-ink-100 flex items-center justify-between shrink-0">
@@ -231,5 +259,6 @@
 <script src="../supabase/supabase-client.js"></script>
 <script src="../supabase/utils.js"></script>
 <script src="../js/annual-volume.js"></script>
+<script src="../js/activity-logs"></script>
 </body>
 </html>
