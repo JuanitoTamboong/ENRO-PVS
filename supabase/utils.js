@@ -1,7 +1,4 @@
-// ============================================================
-// SHARED UTILITIES  —  used by all pages
-// Must load AFTER supabase-client.js and BEFORE page scripts
-// ============================================================
+
 (function () {
     'use strict';
 
