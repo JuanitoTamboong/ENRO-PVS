@@ -1,11 +1,12 @@
 // ============================================================
-// ACTIVITY LOGS PAGE
+// ACTIVITY LOGS PAGE — with realtime subscription
 // ============================================================
 let allLogs = [];
 let filteredLogs = [];
 let currentPage = 1;
 const PAGE_SIZE = 25;
 const CLEAR_LOGS_PHRASE = 'CLEAR LOGS';
+let realtimeChannel = null;
 
 function getClient() {
     return window.supabaseClient ||
@@ -136,6 +137,15 @@ function ensureActivityModalStyles() {
             70%  { box-shadow: 0 0 0 10px rgba(225, 29, 72, 0); }
             100% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0); }
         }
+
+        /* --- New log row highlight --- */
+        @keyframes newLogFlash {
+            0%   { background-color: rgba(22, 163, 74, 0.18); }
+            100% { background-color: transparent; }
+        }
+        tr.log-row-new {
+            animation: newLogFlash 1.8s ease-out;
+        }
     `;
     document.head.appendChild(style);
 }
@@ -189,6 +199,89 @@ async function fetchLogs() {
     }
 
     return data || [];
+}
+
+// ------------------------------------------------------------
+// REALTIME — live updates on activity_logs table
+// ------------------------------------------------------------
+function setupRealtimeSubscription() {
+    const client = getClient();
+    if (!client) return;
+
+    // Clean up any previous channel first
+    if (realtimeChannel) {
+        client.removeChannel(realtimeChannel);
+        realtimeChannel = null;
+    }
+
+    realtimeChannel = client
+        .channel('public:activity_logs')
+        .on(
+            'postgres_changes',
+            { event: 'INSERT', schema: 'public', table: 'activity_logs' },
+            (payload) => {
+                const newLog = payload.new;
+                if (!newLog) return;
+
+                // Prepend to local array (newest first)
+                allLogs.unshift(newLog);
+
+                // If we're on page 1, flash the new row
+                const wasFirstPage = currentPage === 1;
+
+                // Re-apply filters
+                filterLogs();
+
+                // If user is on page 1, highlight the new row
+                if (wasFirstPage) {
+                    requestAnimationFrame(() => highlightNewestRow(newLog.id));
+                }
+            }
+        )
+        .on(
+            'postgres_changes',
+            { event: 'DELETE', schema: 'public', table: 'activity_logs' },
+            (payload) => {
+                const deletedId = payload.old?.id;
+                if (!deletedId) return;
+                allLogs = allLogs.filter(l => String(l.id) !== String(deletedId));
+                filterLogs();
+            }
+        )
+        .on(
+            'postgres_changes',
+            { event: 'UPDATE', schema: 'public', table: 'activity_logs' },
+            (payload) => {
+                const updated = payload.new;
+                if (!updated) return;
+                const idx = allLogs.findIndex(l => String(l.id) === String(updated.id));
+                if (idx !== -1) {
+                    allLogs[idx] = updated;
+                } else {
+                    allLogs.unshift(updated);
+                }
+                filterLogs();
+            }
+        )
+        .subscribe((status) => {
+            console.log('[Activity Logs Realtime] status:', status);
+        });
+}
+
+function highlightNewestRow(logId) {
+    const tbody = document.getElementById('activity-logs-tbody');
+    if (!tbody) return;
+
+    // Find the row with data-log-id (we need to add it in renderLogs)
+    const row = tbody.querySelector(`tr[data-log-id="${logId}"]`);
+    if (!row) return;
+
+    row.classList.remove('log-row-new');
+    void row.offsetWidth;
+    row.classList.add('log-row-new');
+
+    // Remove the class after animation completes
+    setTimeout(() => row.classList.remove('log-row-new'), 2000);
 }
 
 // ------------------------------------------------------------
@@ -258,7 +351,7 @@ function renderLogs() {
             : esc(log.entity_name || '—');
 
         return `
-            <tr>
+            <tr data-log-id="${log.id}">
                 <td class="text-ink-500 text-[11px] whitespace-nowrap">${esc(whenStr)}</td>
                 <td>
                     <span class="status-badge ${meta.css}">
@@ -375,19 +468,16 @@ function openLogDetailsModal(id) {
     const log = allLogs.find(l => String(l.id) === String(id));
     if (!log) return;
 
-    // Subtitle
     const sub = document.getElementById('log-details-subtitle');
     if (sub) {
         sub.innerText = `${log.action} • ${log.entity_type} • ${log.performed_by || 'system'}`;
     }
 
-    // Parse details safely
     let details = log.details;
     if (typeof details === 'string') {
         try { details = JSON.parse(details); } catch (_) { /* leave as string */ }
     }
 
-    // Build clean, human-readable output
     const lines = [];
     const add = (label, value) => {
         if (value !== undefined && value !== null && value !== '') {
@@ -395,7 +485,6 @@ function openLogDetailsModal(id) {
         }
     };
 
-    // Header
     add('Action:',  log.action);
     add('Who:',     log.performed_by || 'system');
     add('When:',    new Date(log.performed_at).toLocaleString('en-US', {
@@ -405,7 +494,6 @@ function openLogDetailsModal(id) {
     add('Entity:',  log.entity_type);
     if (log.entity_name) add('Record:', log.entity_name);
 
-    // ---- Auth events ----
     if (log.entity_type === 'auth') {
         lines.push('');
         lines.push('─── Authentication ─────────────');
@@ -429,8 +517,6 @@ function openLogDetailsModal(id) {
             add('Browser:', shortUA);
         }
     }
-
-    // ---- Transaction events ----
     else if (log.entity_type === 'transactions') {
         const d = details || {};
         lines.push('');
@@ -447,8 +533,6 @@ function openLogDetailsModal(id) {
         if (d.new_balance  !== undefined) add('New Balance:',  `${d.new_balance} cu.m`);
         if (d.recorded_by)                add('Recorded By:',  d.recorded_by);
     }
-
-    // ---- Permittee changes ----
     else if (log.entity_type === 'permittees') {
         const before = details?.before || {};
         const after  = details?.after  || {};
@@ -508,8 +592,6 @@ function openLogDetailsModal(id) {
             add('Commodity:', before.commodity);
         }
     }
-
-    // ---- Unknown ----
     else {
         lines.push('');
         lines.push(JSON.stringify(details, null, 2));
@@ -654,6 +736,7 @@ async function bootActivityLogs() {
     }
 
     await reload();
+    setupRealtimeSubscription();
 }
 
 if (document.readyState === 'loading') {
