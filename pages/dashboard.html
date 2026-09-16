@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ENRO • Dashboard</title>
-    <!-- Adjusted paths to go up one level to root -->
     <link rel="stylesheet" href="../css/tailwind.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -12,7 +11,6 @@
 </head>
 <body class="h-full bg-ink-50 font-sans text-ink-800">
 
-<!-- Shared header injected by JS -->
 <div id="app-header"></div>
 
 <main class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -33,7 +31,7 @@
                     <span class="text-[10px] font-bold text-ink-400 uppercase tracking-wider">Total Permittees</span>
                     <i class="fa-solid fa-users text-ink-300 text-xs"></i>
                 </div>
-                <span id="hub-metric-permits" class="text-2xl font-bold text-ink-900">8</span>
+                <span id="hub-metric-permits" class="text-2xl font-bold text-ink-900">0</span>
                 <span class="text-[10px] text-ink-400 block mt-0.5">registered</span>
             </div>
             <div class="metric-card">
@@ -41,7 +39,7 @@
                     <span class="text-[10px] font-bold text-ink-400 uppercase tracking-wider">Allowed Volume</span>
                     <i class="fa-solid fa-cube text-ink-300 text-xs"></i>
                 </div>
-                <span id="hub-metric-allowed" class="text-2xl font-bold text-ink-900">48,592</span>
+                <span id="hub-metric-allowed" class="text-2xl font-bold text-ink-900">0</span>
                 <span class="text-[10px] text-ink-400 block mt-0.5">cubic meters</span>
             </div>
             <div class="metric-card">
@@ -49,7 +47,7 @@
                     <span class="text-[10px] font-bold text-ink-400 uppercase tracking-wider">Extracted</span>
                     <i class="fa-solid fa-truck text-ink-300 text-xs"></i>
                 </div>
-                <span id="hub-metric-extracted" class="text-2xl font-bold text-amber-600">22,147</span>
+                <span id="hub-metric-extracted" class="text-2xl font-bold text-amber-600">0</span>
                 <span class="text-[10px] text-ink-400 block mt-0.5">cubic meters</span>
             </div>
             <div class="metric-card">
@@ -57,7 +55,7 @@
                     <span class="text-[10px] font-bold text-ink-400 uppercase tracking-wider">Low Balance</span>
                     <i class="fa-solid fa-triangle-exclamation text-rose-300 text-xs"></i>
                 </div>
-                <span id="hub-metric-alerts" class="text-2xl font-bold text-rose-600">1</span>
+                <span id="hub-metric-alerts" class="text-2xl font-bold text-rose-600">0</span>
                 <span class="text-[10px] text-ink-400 block mt-0.5">needs attention</span>
             </div>
         </div>
@@ -119,7 +117,6 @@
     </div>
 </div>
 
-<!-- Adjusted JS paths -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../supabase/supabase-client.js"></script>
 <script src="../supabase/utils.js"></script>

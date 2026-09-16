@@ -16,7 +16,6 @@
 <main class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
     <div class="space-y-5">
 
-        <!-- Level 1: List -->
         <div id="annual-level-1-list" class="space-y-5">
             <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
                 <div>
@@ -52,7 +51,6 @@
             </div>
         </div>
 
-        <!-- Level 2: Ledger -->
         <div id="annual-level-2-ledger" class="hidden space-y-5">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div class="breadcrumb">
@@ -142,7 +140,6 @@
     </div>
 </main>
 
-<!-- ADD TRANSACTION MODAL -->
 <div id="modal-add-tx" class="modal-overlay">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden">
         <div class="px-5 py-4 border-b border-ink-100 flex items-center justify-between shrink-0">
@@ -187,7 +184,7 @@
                         </div>
                         <div>
                             <label class="block text-[11px] font-bold text-ink-600 mb-1">Amount (₱) *</label>
-                            <input type="number" step="0.01" id="tx-amount" required class="input-field" placeholder="4500">
+                            <input type="number" step="0.01" min="0" id="tx-amount" required class="input-field" placeholder="4500">
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-3">

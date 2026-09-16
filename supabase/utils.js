@@ -6,6 +6,14 @@
     'use strict';
 
     // ------------------------------------------------------------
+    // Client resolver (safe even if global isn't set yet)
+    // ------------------------------------------------------------
+    window.getClient = function () {
+        return window.supabaseClient ||
+               (typeof supabaseClient !== 'undefined' ? supabaseClient : null);
+    };
+
+    // ------------------------------------------------------------
     // NUMBER FORMATTING
     // ------------------------------------------------------------
     window.formatNumber = function (num) {
@@ -17,7 +25,7 @@
     };
 
     // ------------------------------------------------------------
-    // TOAST  (uses #toast markup already present in each page)
+    // TOAST
     // ------------------------------------------------------------
     window.showToast = function (message, type = 'success') {
         const toast = document.getElementById('toast');
@@ -26,12 +34,16 @@
 
         const titleEl = document.getElementById('toast-title');
         const msgEl   = document.getElementById('toast-message');
-        if (titleEl) titleEl.innerText = type === 'success' ? 'Success' : 'Information';
+        if (titleEl) titleEl.innerText = type === 'success' ? 'Success'
+                                       : type === 'error'   ? 'Error'
+                                       : 'Information';
         if (msgEl)   msgEl.innerText   = message;
 
         if (icon) {
             icon.innerHTML = type === 'success'
                 ? '<i class="fa-solid fa-circle-check text-enro-400 text-lg"></i>'
+                : type === 'error'
+                ? '<i class="fa-solid fa-circle-exclamation text-rose-400 text-lg"></i>'
                 : '<i class="fa-solid fa-circle-info text-sky-400 text-lg"></i>';
         }
 
@@ -41,37 +53,32 @@
     };
 
     // ------------------------------------------------------------
-    // STATUS LOGIC — official ENRO status set
-    //   • Expired          — permit's end date has passed
-    //   • Fully Consumed   — remaining balance is 0
-    //   • Nearly Exhausted — remaining <= 100 cu.m
-    //   • Low Production   — < 15% of allowance consumed
-    //   • Active           — normal operation
+    // STATUS LOGIC
     // ------------------------------------------------------------
     window.getStatusInfo = function (p) {
         const allowed   = Number(p.allowedVol)   || 0;
         const remaining = Number(p.remainingVol) || 0;
 
-        // 1. Expired — permit validity ended
+        // 1. Expired
         if (p.endDate) {
             const end = new Date(p.endDate);
             if (!isNaN(end.getTime()) && end.getTime() < Date.now())
                 return { label: 'Expired',          css: 'bg-ink-100 text-ink-600 border-ink-200' };
         }
 
-        // 2. Fully Consumed — no capacity left
+        // 2. Fully Consumed
         if (allowed > 0 && remaining === 0)
             return { label: 'Fully Consumed',       css: 'bg-rose-50 text-rose-700 border-rose-200' };
 
-        // 3. Nearly Exhausted — at or below 100 cu.m
+        // 3. Nearly Exhausted
         if (allowed > 0 && remaining <= 100)
             return { label: 'Nearly Exhausted',     css: 'bg-amber-50 text-amber-700 border-amber-200' };
 
-        // 4. Low Production — barely used so far (< 15% consumed)
+        // 4. Low Production (< 15% consumed)
         if (allowed > 0 && remaining < allowed && (remaining / allowed) > 0.85)
             return { label: 'Low Production',       css: 'bg-blue-50 text-blue-700 border-blue-200' };
 
-        // 5. Active — normal operation
+        // 5. Active
         return { label: 'Active',                   css: 'bg-enro-50 text-enro-700 border-enro-200' };
     };
 
@@ -90,24 +97,24 @@
     // ------------------------------------------------------------
     window.mapDbRowToPermittee = function (row) {
         return {
-            id: row.id,
-            name: row.name || '',
-            location: row.location || '',
-            permitNo: row.permit_no || '',
-            type: row.type || '',
-            commodity: row.commodity || '',
-            rate: row.rate || '',
-            allowedVol: Number(row.allowed_vol) || 0,
+            id:           row.id,
+            name:         row.name || '',
+            location:     row.location || '',
+            permitNo:     row.permit_no || '',
+            type:         row.type || '',
+            commodity:    row.commodity || '',
+            rate:         row.rate || '',
+            allowedVol:   Number(row.allowed_vol) || 0,
             remainingVol: Number(row.remaining_vol) || 0,
-            startDate: row.start_date || '',
-            endDate: row.end_date || '',
-            status: row.status || 'Active',
+            startDate:    row.start_date || '',
+            endDate:      row.end_date || '',
+            status:       row.status || 'Active',
             transactions: row.transactions || []
         };
     };
 
     // ------------------------------------------------------------
-    // SESSION STORAGE helpers
+    // SESSION STORAGE (non-critical cache)
     // ------------------------------------------------------------
     window.loadPermittees = function () {
         const raw = sessionStorage.getItem('enro_permittees');
@@ -123,7 +130,7 @@
     window.permitteesData = window.permitteesData || window.loadPermittees();
 
     // ------------------------------------------------------------
-    // AUTH HELPERS + LOGOUT
+    // AUTH + LOGOUT
     // ------------------------------------------------------------
     function normalizeLoginRole(role) {
         return role?.toString().toLowerCase().replace(/[\s-]+/g, '_');
@@ -133,13 +140,13 @@
     }
 
     window.handleLogout = async function () {
-        const client = window.supabaseClient || (typeof supabaseClient !== 'undefined' ? supabaseClient : null);
+        const client = window.getClient();
         if (client) await client.auth.signOut();
         window.location.href = '../index.html';
     };
 
     // ------------------------------------------------------------
-    // MOBILE MENU TOGGLE
+    // MOBILE MENU
     // ------------------------------------------------------------
     window.toggleMobileMenu = function () {
         const menu   = document.getElementById('mobile-menu');
@@ -160,7 +167,7 @@
         const headerMount = document.getElementById('app-header');
         if (!headerMount) return;
 
-        const client = window.supabaseClient || (typeof supabaseClient !== 'undefined' ? supabaseClient : null);
+        const client = window.getClient();
         if (!client) {
             console.error('[Shell] supabaseClient missing.');
             return;

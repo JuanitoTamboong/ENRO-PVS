@@ -1,61 +1,25 @@
 // ============================================================
 // DASHBOARD PAGE
 // ============================================================
-
-// ------------------------------------------------------------
-// Resolve supabase client (global or module-scoped)
-// ------------------------------------------------------------
-function getSupabase() {
-    return window.supabaseClient || (typeof supabaseClient !== 'undefined' ? supabaseClient : null);
+function getClient() {
+    return window.supabaseClient ||
+           (typeof supabaseClient !== 'undefined' ? supabaseClient : null);
 }
 
-// ------------------------------------------------------------
-// Fetch permittees from Supabase and map to app shape
-// ------------------------------------------------------------
 async function fetchPermittees() {
-    const client = getSupabase();
-    if (!client) {
-        console.error('[Dashboard] Supabase client unavailable.');
-        return [];
-    }
-
+    const client = getClient();
+    if (!client) return [];
     const { data, error } = await client
         .from('permittees')
         .select('*')
         .order('created_at', { ascending: false });
-
     if (error) {
-        console.error('[Dashboard] Failed to load permittees:', error.message);
+        console.error('[Dashboard] fetch error:', error);
         return [];
     }
-
-    return (data || []).map(row => {
-        // Prefer shared mapper if utils.js is loaded
-        if (typeof window.mapDbRowToPermittee === 'function') {
-            return window.mapDbRowToPermittee(row);
-        }
-        // Fallback inline mapping
-        return {
-            id: row.id,
-            name: row.name || '',
-            location: row.location || '',
-            permitNo: row.permit_no || '',
-            type: row.type || '',
-            commodity: row.commodity || '',
-            rate: row.rate || '',
-            allowedVol: Number(row.allowed_vol) || 0,
-            remainingVol: Number(row.remaining_vol) || 0,
-            startDate: row.start_date || '',
-            endDate: row.end_date || '',
-            status: row.status || 'Active',
-            transactions: row.transactions || []
-        };
-    });
+    return (data || []).map(window.mapDbRowToPermittee);
 }
 
-// ------------------------------------------------------------
-// Metrics
-// ------------------------------------------------------------
 function updateHubMetrics(permittees) {
     const totalAllowed   = permittees.reduce((s, p) => s + p.allowedVol, 0);
     const totalRemaining = permittees.reduce((s, p) => s + p.remainingVol, 0);
@@ -68,9 +32,6 @@ function updateHubMetrics(permittees) {
     document.getElementById('hub-metric-alerts').innerText     = lowAlerts;
 }
 
-// ------------------------------------------------------------
-// Recent list
-// ------------------------------------------------------------
 function renderHubRecent(permittees) {
     const container = document.getElementById('hub-recent-list');
     const recent = permittees.slice(0, 4);
@@ -92,11 +53,11 @@ function renderHubRecent(permittees) {
             <a href="./annual-volume.html?id=${p.id}" class="px-5 py-3 flex items-center justify-between hover:bg-ink-50/50 transition cursor-pointer block">
                 <div class="flex items-center gap-3 min-w-0">
                     <div class="w-8 h-8 bg-enro-50 border border-enro-100 rounded-lg flex items-center justify-center text-enro-700 text-[10px] font-bold shrink-0">
-                        ${p.name.split(' ').map(w => w[0]).slice(0, 2).join('')}
+                        ${escapeHtml(p.name.split(' ').map(w => w[0]).slice(0, 2).join(''))}
                     </div>
                     <div class="min-w-0">
-                        <p class="text-xs font-bold text-ink-800 truncate">${p.name}</p>
-                        <p class="text-[10px] text-ink-400 font-mono">${p.permitNo} • ${p.location}</p>
+                        <p class="text-xs font-bold text-ink-800 truncate">${escapeHtml(p.name)}</p>
+                        <p class="text-[10px] text-ink-400 font-mono">${escapeHtml(p.permitNo)} • ${escapeHtml(p.location)}</p>
                     </div>
                 </div>
                 <div class="text-right shrink-0 ml-3">
@@ -110,11 +71,7 @@ function renderHubRecent(permittees) {
     }).join('');
 }
 
-// ------------------------------------------------------------
-// Bootstrap
-// ------------------------------------------------------------
-async function initDashboard() {
-    // Date
+document.addEventListener('DOMContentLoaded', async () => {
     const dateEl = document.getElementById('hub-date');
     if (dateEl) {
         dateEl.innerText = new Date().toLocaleDateString('en-US', {
@@ -122,33 +79,22 @@ async function initDashboard() {
         });
     }
 
-    // Fetch data
-    const permittees = await fetchPermittees();
-
-    // Keep the shared cache in sync so other pages benefit
-    if (typeof window.savePermittees === 'function') {
-        window.savePermittees(permittees);
-    }
-    window.permitteesData = permittees;
-
-    // Render
-    updateHubMetrics(permittees);
-    renderHubRecent(permittees);
-}
-
-// Wait for DOM + auth session before bootstrapping
-document.addEventListener('DOMContentLoaded', () => {
-    const client = getSupabase();
+    const client = getClient();
     if (!client) {
-        console.error('[Dashboard] Supabase client not found. Did supabase-client.js load?');
+        console.error('[Dashboard] Supabase client not found.');
         return;
     }
 
-    client.auth.getSession().then(({ data: { session } }) => {
-        if (!session) {
-            window.location.href = '../index.html';
-            return;
-        }
-        initDashboard();
-    });
+    const { data: { session } } = await client.auth.getSession();
+    if (!session) {
+        window.location.href = '../index.html';
+        return;
+    }
+
+    const permittees = await fetchPermittees();
+    window.permitteesData = permittees;
+    if (typeof savePermittees === 'function') savePermittees(permittees);
+
+    updateHubMetrics(permittees);
+    renderHubRecent(permittees);
 });

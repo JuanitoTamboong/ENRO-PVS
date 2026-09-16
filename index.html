@@ -13,7 +13,6 @@
 <body class="login-page h-full bg-ink-50 font-sans text-ink-800">
 
 <div class="login-viewport">
-    <!-- Ambient background blobs -->
     <div class="login-bg" aria-hidden="true">
         <span class="login-blob login-blob--a"></span>
         <span class="login-blob login-blob--b"></span>
@@ -21,9 +20,7 @@
         <span class="login-grid"></span>
     </div>
 
-    <!-- Shell -->
     <div class="login-shell">
-        <!-- Left brand rail -->
         <aside class="login-rail">
             <div class="login-rail-brand">
                 <div class="login-rail-mark">
@@ -67,7 +64,6 @@
             </div>
         </aside>
 
-        <!-- Right auth panel -->
         <main class="login-panel">
             <header class="login-panel-head">
                 <p class="login-panel-kicker">Sign in</p>
@@ -75,7 +71,6 @@
                 <p>Select your access type and continue.</p>
             </header>
 
-            <!-- Segmented role toggle -->
             <div class="login-role-toggle" role="tablist" aria-label="Access type">
                 <span class="login-role-toggle-thumb" id="roleThumb"></span>
                 <button type="button" role="tab" aria-selected="true" class="login-role-tab is-active" data-role="admin" onclick="selectLoginRole('admin')">
@@ -132,7 +127,6 @@
     </div>
 </div>
 
-<!-- Toast -->
 <div id="toast" class="toast">
     <div id="toast-icon" class="shrink-0">
         <i class="fa-solid fa-circle-check text-enro-400 text-lg"></i>
@@ -145,7 +139,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./supabase/supabase-client.js"></script>
-<script src="./js/utils.js"></script>
+<script src="./supabase/utils.js"></script>
 <script src="./js/login.js"></script>
 </body>
 </html>
