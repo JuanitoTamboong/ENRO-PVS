@@ -36,6 +36,20 @@ async function fetchLogs() {
 }
 
 // ------------------------------------------------------------
+// Action styling
+// ------------------------------------------------------------
+function getActionMeta(action) {
+    return {
+        LOGIN:        { label: 'Signed in',    css: 'bg-enro-50 text-enro-700 border-enro-200',          icon: 'fa-right-to-bracket'   },
+        LOGOUT:       { label: 'Signed out',   css: 'bg-ink-100 text-ink-600 border-ink-200',            icon: 'fa-right-from-bracket' },
+        FAILED_LOGIN: { label: 'Login failed', css: 'bg-rose-50 text-rose-700 border-rose-200',          icon: 'fa-user-lock'          },
+        INSERT:       { label: 'Created',      css: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: 'fa-plus'               },
+        UPDATE:       { label: 'Updated',      css: 'bg-blue-50 text-blue-700 border-blue-200',          icon: 'fa-pen'                },
+        DELETE:       { label: 'Deleted',      css: 'bg-rose-50 text-rose-700 border-rose-200',          icon: 'fa-trash'              }
+    }[action] || { label: action || '—', css: 'bg-ink-100 text-ink-600 border-ink-200', icon: 'fa-circle' };
+}
+
+// ------------------------------------------------------------
 // Render table
 // ------------------------------------------------------------
 function renderLogs() {
@@ -75,29 +89,29 @@ function renderLogs() {
                 hour: '2-digit', minute: '2-digit'
             });
 
-        const actionMeta = {
-            INSERT: { label: 'Created', css: 'bg-enro-50 text-enro-700 border-enro-200', icon: 'fa-plus' },
-            UPDATE: { label: 'Updated', css: 'bg-blue-50 text-blue-700 border-blue-200', icon: 'fa-pen' },
-            DELETE: { label: 'Deleted', css: 'bg-rose-50 text-rose-700 border-rose-200', icon: 'fa-trash' }
-        }[log.action] || { label: log.action, css: 'bg-ink-100 text-ink-600 border-ink-200', icon: 'fa-circle' };
+        const meta = getActionMeta(log.action);
 
-        const entityLabel = log.entity_type === 'permittees'
-            ? 'Permittee'
-            : log.entity_type === 'transactions'
-                ? 'Transaction'
-                : log.entity_type;
+        const entityLabel = {
+            'auth':         'Authentication',
+            'permittees':   'Permittee',
+            'transactions': 'Transaction'
+        }[log.entity_type] || log.entity_type || '—';
+
+        const recordDisplay = log.entity_type === 'auth'
+            ? esc(log.performed_by || log.entity_name || '—')
+            : esc(log.entity_name || '—');
 
         return `
             <tr>
                 <td class="text-ink-500 text-[11px] whitespace-nowrap">${esc(whenStr)}</td>
                 <td>
-                    <span class="status-badge ${actionMeta.css}">
-                        <i class="fa-solid ${actionMeta.icon} text-[8px]"></i>
-                        ${esc(actionMeta.label)}
+                    <span class="status-badge ${meta.css}">
+                        <i class="fa-solid ${meta.icon} text-[8px]"></i>
+                        ${esc(meta.label)}
                     </span>
                 </td>
                 <td class="text-ink-600 text-xs">${esc(entityLabel)}</td>
-                <td class="font-bold text-ink-900 text-xs">${esc(log.entity_name || '—')}</td>
+                <td class="font-bold text-ink-900 text-xs">${recordDisplay}</td>
                 <td class="text-ink-500 text-[11px]">${esc(log.performed_by || 'system')}</td>
                 <td class="text-center">
                     <button type="button"
@@ -117,15 +131,15 @@ function renderLogs() {
 // Filters
 // ------------------------------------------------------------
 function filterLogs() {
-    const q = (document.getElementById('log-search-input')?.value || '').toLowerCase();
+    const q      = (document.getElementById('log-search-input')?.value || '').toLowerCase();
     const action = document.getElementById('log-action-filter')?.value || '';
     const entity = document.getElementById('log-entity-filter')?.value || '';
 
     filteredLogs = allLogs.filter(log => {
         const matchesSearch =
-            (log.entity_name || '').toLowerCase().includes(q) ||
+            (log.entity_name  || '').toLowerCase().includes(q) ||
             (log.performed_by || '').toLowerCase().includes(q) ||
-            (log.action || '').toLowerCase().includes(q);
+            (log.action       || '').toLowerCase().includes(q);
 
         const matchesAction = !action || log.action === action;
         const matchesEntity = !entity || log.entity_type === entity;
@@ -199,24 +213,154 @@ function goToPrevPage() { goToPage(currentPage - 1); }
 function goToNextPage() { goToPage(currentPage + 1); }
 
 // ------------------------------------------------------------
-// Details modal
+// Details modal — CLEAN, HUMAN-READABLE OUTPUT
 // ------------------------------------------------------------
 function openLogDetailsModal(id) {
     const log = allLogs.find(l => String(l.id) === String(id));
     if (!log) return;
 
+    // Subtitle
     const sub = document.getElementById('log-details-subtitle');
     if (sub) {
-        sub.innerText = `${log.action} • ${log.entity_type} • ${log.entity_name || '—'}`;
+        sub.innerText = `${log.action} • ${log.entity_type} • ${log.performed_by || 'system'}`;
+    }
+
+    // Parse details safely
+    let details = log.details;
+    if (typeof details === 'string') {
+        try { details = JSON.parse(details); } catch (_) { /* leave as string */ }
+    }
+
+    // Build clean, human-readable output
+    const lines = [];
+    const add = (label, value) => {
+        if (value !== undefined && value !== null && value !== '') {
+            lines.push(`${label.padEnd(18)} ${value}`);
+        }
+    };
+
+    // Header
+    add('Action:',  log.action);
+    add('Who:',     log.performed_by || 'system');
+    add('When:',    new Date(log.performed_at).toLocaleString('en-US', {
+        year: 'numeric', month: 'short', day: 'numeric',
+        hour: '2-digit', minute: '2-digit', second: '2-digit'
+    }));
+    add('Entity:',  log.entity_type);
+    if (log.entity_name) add('Record:', log.entity_name);
+
+    // ---- Auth events ----
+    if (log.entity_type === 'auth') {
+        lines.push('');
+        lines.push('─── Authentication ─────────────');
+        add('Email:', log.performed_by);
+
+        const reason = details?.reason;
+        if (reason) {
+            lines.push('');
+            lines.push('  ⚠  ' + reason);
+            lines.push('');
+        }
+
+        if (log.user_agent) {
+            const ua = String(log.user_agent);
+            const shortUA =
+                ua.includes('Chrome')  ? 'Chrome'  :
+                ua.includes('Firefox') ? 'Firefox' :
+                ua.includes('Safari')  ? 'Safari'  :
+                ua.includes('Edge')    ? 'Edge'    :
+                'Browser';
+            add('Browser:', shortUA);
+        }
+    }
+
+    // ---- Transaction events ----
+    else if (log.entity_type === 'transactions') {
+        const d = details || {};
+        lines.push('');
+        lines.push('─── Transaction ────────────────');
+        add('Permittee:',   d.permittee);
+        add('Permit No:',   d.permit_no);
+        add('DR Number:',   d.dr_no);
+        add('Date:',        d.date);
+        add('Volume:',      d.volume ? `${d.volume} cu.m` : null);
+        add('Amount:',      d.amount ? `₱${d.amount}` : null);
+        add('OP #:',        d.op_no);
+        add('Truck/Plate:', d.truck_load);
+        if (d.prev_balance !== undefined) add('Prev Balance:', `${d.prev_balance} cu.m`);
+        if (d.new_balance  !== undefined) add('New Balance:',  `${d.new_balance} cu.m`);
+        if (d.recorded_by)                add('Recorded By:',  d.recorded_by);
+    }
+
+    // ---- Permittee changes ----
+    else if (log.entity_type === 'permittees') {
+        const before = details?.before || {};
+        const after  = details?.after  || {};
+
+        if (log.action === 'INSERT' && after.name) {
+            lines.push('');
+            lines.push('─── New Permittee ──────────────');
+            add('Name:',        after.name);
+            add('Location:',    after.location);
+            add('Permit No:',   after.permit_no);
+            add('Type:',        after.type);
+            add('Commodity:',   after.commodity);
+            add('Area:',        after.area);
+            add('Allowed Vol:', after.allowed_vol ? `${after.allowed_vol} cu.m` : null);
+            add('Start Date:',  after.start_date);
+            add('End Date:',    after.end_date);
+            add('Status:',      after.status);
+        }
+        else if (log.action === 'UPDATE') {
+            lines.push('');
+            lines.push('─── Changes ────────────────────');
+
+            const fields = [
+                ['name',          'Name'],
+                ['location',      'Location'],
+                ['permit_no',     'Permit No'],
+                ['type',          'Type'],
+                ['commodity',     'Commodity'],
+                ['area',          'Area'],
+                ['rate',          'Annual Extraction'],
+                ['allowed_vol',   'Allowed Volume'],
+                ['remaining_vol', 'Remaining Volume'],
+                ['start_date',    'Start Date'],
+                ['end_date',      'End Date'],
+                ['status',        'Status']
+            ];
+
+            let anyChange = false;
+            fields.forEach(([key, label]) => {
+                const b = before[key];
+                const a = after[key];
+                if (String(b) !== String(a)) {
+                    anyChange = true;
+                    lines.push(`${label.padEnd(18)} ${b ?? '—'}  →  ${a ?? '—'}`);
+                }
+            });
+
+            if (!anyChange) lines.push('  (No field values changed)');
+        }
+        else if (log.action === 'DELETE') {
+            lines.push('');
+            lines.push('─── Deleted Permittee ──────────');
+            add('Name:',      before.name);
+            add('Location:',  before.location);
+            add('Permit No:', before.permit_no);
+            add('Type:',      before.type);
+            add('Commodity:', before.commodity);
+        }
+    }
+
+    // ---- Unknown ----
+    else {
+        lines.push('');
+        lines.push(JSON.stringify(details, null, 2));
     }
 
     const pre = document.getElementById('log-details-json');
-    if (pre) {
-        const details = typeof log.details === 'string'
-            ? JSON.parse(log.details)
-            : log.details;
-        pre.innerText = JSON.stringify(details, null, 2);
-    }
+    if (pre) pre.innerText = lines.join('\n');
 
     const modal = document.getElementById('modal-log-details');
     if (modal) modal.classList.add('active');
@@ -304,9 +448,7 @@ function exportLogsToExcel() {
         return;
     }
 
-    const rows = [
-        ['When', 'Action', 'Entity', 'Record', 'Performed By', 'Details']
-    ];
+    const rows = [['When', 'Action', 'Entity', 'Record', 'Performed By', 'Details']];
 
     filteredLogs.forEach(log => {
         rows.push([

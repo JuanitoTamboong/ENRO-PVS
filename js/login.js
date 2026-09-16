@@ -41,14 +41,35 @@ function getAccountRole(user) {
 }
 
 // ------------------------------------------------------------
-// Log auth events (best-effort, never blocks login)
+// Human-readable role labels
 // ------------------------------------------------------------
-async function logAuthEvent(client, action, email, extra) {
+function roleLabel(role) {
+    if (role === 'admin')       return 'Admin';
+    if (role === 'admin_staff') return 'Admin Staff';
+    return role || 'no assigned role';
+}
+
+// What the user selected on the login screen (tab)
+function getSelectedRoleLabel() {
+    return currentLoginRole === 'admin' ? 'Admin' : 'Admin Staff';
+}
+
+// What the account actually is (per Supabase metadata)
+function getActualRoleLabel(user) {
+    const raw = normalizeLoginRole(user?.app_metadata?.role || user?.user_metadata?.role);
+    return roleLabel(raw);
+}
+
+// ------------------------------------------------------------
+// Log auth events — sends " — reason" appended to user agent
+// The RPC on Supabase extracts the reason into details.reason
+// ------------------------------------------------------------
+async function logAuthEvent(client, action, email, reason) {
     try {
         await client.rpc('log_auth_event', {
             p_action:     action,
             p_email:      email,
-            p_user_agent: navigator.userAgent + (extra ? ` [${extra}]` : '')
+            p_user_agent: navigator.userAgent + (reason ? ` — ${reason}` : '')
         });
     } catch (_) { /* ignore logging errors */ }
 }
@@ -126,25 +147,36 @@ async function handleLogin(e) {
             password: password
         });
 
+        // ---- Wrong password / unknown email ----
         if (authError) {
-            await logAuthEvent(client, 'FAILED_LOGIN', email);
+            await logAuthEvent(client, 'FAILED_LOGIN', email, 'Wrong email or password');
             throw authError;
         }
 
         const { data: { user } } = await client.auth.getUser();
         const accountRole = getAccountRole(user);
 
+        // ---- Role mismatch (correct credentials, wrong portal) ----
         if (accountRole && accountRole !== currentLoginRole) {
-            await logAuthEvent(client, 'FAILED_LOGIN', email, 'role mismatch');
+            const selected = getSelectedRoleLabel();
+            const actual   = getActualRoleLabel(user);
+
+            await logAuthEvent(
+                client,
+                'FAILED_LOGIN',
+                email,
+                `Tried to sign in as ${selected} but this account is ${actual}`
+            );
+
             await client.auth.signOut();
             throw new Error(
-                `This account is not registered as ${
-                    currentLoginRole === 'admin' ? 'an Admin' : 'Admin Staff'
-                }.`
+                `This account is not registered as ${selected}. ` +
+                `Please select "${actual}" and try again.`
             );
         }
 
-        await logAuthEvent(client, 'LOGIN', email);
+        // ---- Successful login ----
+        await logAuthEvent(client, 'LOGIN', email, `Signed in as ${getSelectedRoleLabel()}`);
 
         sessionStorage.setItem('enro_user_role', currentLoginRole);
         showToast(
