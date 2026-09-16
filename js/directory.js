@@ -1,5 +1,5 @@
 // ============================================================
-// DIRECTORY PAGE — Supabase + Realtime + safe import
+// DIRECTORY PAGE — Supabase + Realtime + safe import + pagination
 // ============================================================
 (function () {
     'use strict';
@@ -12,6 +12,13 @@
 
     window.permitteesData = window.permitteesData || [];
     let realtimeChannel = null;
+
+    // ------------------------------------------------------------
+    // Pagination state
+    // ------------------------------------------------------------
+    const PAGE_SIZE = 25;
+    let currentPage = 1;
+    let filteredData = [];   // full filtered dataset (before pagination slice)
 
     function getClient() {
         return window.supabaseClient ||
@@ -96,16 +103,18 @@
     }
 
     // ------------------------------------------------------------
-    // Render — all 13 columns
+    // Render — paginated (25 per page), all 13 columns
     // ------------------------------------------------------------
     function renderDirectoryTable(data) {
+        filteredData = data || [];
+
         const tbody = document.getElementById('directory-tbody');
         const badge = document.getElementById('directory-count-badge');
 
-        if (badge) badge.innerText = `${data.length} ${data.length === 1 ? 'entry' : 'entries'}`;
+        if (badge) badge.innerText = `${filteredData.length} ${filteredData.length === 1 ? 'entry' : 'entries'}`;
         if (!tbody) return;
 
-        if (!data || data.length === 0) {
+        if (filteredData.length === 0) {
             tbody.innerHTML = `
                 <tr><td colspan="13">
                     <div class="empty-state">
@@ -113,14 +122,22 @@
                         No permittees match your search criteria.
                     </div>
                 </td></tr>`;
+            renderPagination(0);
             return;
         }
+
+        const totalPages = Math.max(1, Math.ceil(filteredData.length / PAGE_SIZE));
+        if (currentPage > totalPages) currentPage = totalPages;
+        if (currentPage < 1) currentPage = 1;
+
+        const start = (currentPage - 1) * PAGE_SIZE;
+        const pageRows = filteredData.slice(start, start + PAGE_SIZE);
 
         const fmt  = window.formatNumber || ((n) => n);
         const stat = window.getStatusInfo || ((p) => ({ label: p.status || '', css: '' }));
         const esc  = window.escapeHtml    || ((s) => s);
 
-        tbody.innerHTML = data.map(p => {
+        tbody.innerHTML = pageRows.map(p => {
             const s = stat(p);
             const area             = p.area || p.areaHas || '—';
             const annualExtraction = p.rate || p.annualExtraction || '—';
@@ -156,10 +173,84 @@
                 </tr>
             `;
         }).join('');
+
+        renderPagination(filteredData.length);
     }
 
     // ------------------------------------------------------------
-    // Filter
+    // Render pagination bar
+    // ------------------------------------------------------------
+    function renderPagination(totalRows) {
+        const rangeEl = document.getElementById('pagination-range');
+        const totalEl = document.getElementById('pagination-total');
+        const prevBtn = document.getElementById('pagination-prev');
+        const nextBtn = document.getElementById('pagination-next');
+        const pagesEl = document.getElementById('pagination-pages');
+
+        if (totalRows === 0) {
+            if (rangeEl) rangeEl.innerText = '0–0';
+            if (totalEl) totalEl.innerText = '0';
+            if (prevBtn) prevBtn.disabled = true;
+            if (nextBtn) nextBtn.disabled = true;
+            if (pagesEl)  pagesEl.innerHTML = '';
+            return;
+        }
+
+        const totalPages = Math.max(1, Math.ceil(totalRows / PAGE_SIZE));
+        const start = (currentPage - 1) * PAGE_SIZE + 1;
+        const end   = Math.min(currentPage * PAGE_SIZE, totalRows);
+
+        if (rangeEl) rangeEl.innerText = `${start}–${end}`;
+        if (totalEl) totalEl.innerText = totalRows;
+        if (prevBtn) prevBtn.disabled = (currentPage === 1);
+        if (nextBtn) nextBtn.disabled = (currentPage === totalPages);
+        if (pagesEl) pagesEl.innerHTML = buildPageButtons(currentPage, totalPages);
+    }
+
+    function buildPageButtons(current, total) {
+        const pages = [];
+        const push = (n) => pages.push(
+            `<button class="pagination-page ${n === current ? 'is-active' : ''}"
+                     onclick="goToPage(${n})">${n}</button>`
+        );
+        const pushEllipsis = () => pages.push(`<span class="pagination-ellipsis">…</span>`);
+
+        if (total <= 7) {
+            for (let i = 1; i <= total; i++) push(i);
+        } else {
+            push(1);
+            if (current > 3) pushEllipsis();
+            const from = Math.max(2, current - 1);
+            const to   = Math.min(total - 1, current + 1);
+            for (let i = from; i <= to; i++) push(i);
+            if (current < total - 2) pushEllipsis();
+            push(total);
+        }
+        return pages.join('');
+    }
+
+    // ------------------------------------------------------------
+    // Pagination navigation
+    // ------------------------------------------------------------
+    function goToPage(n) {
+        const totalPages = Math.max(1, Math.ceil(filteredData.length / PAGE_SIZE));
+        if (n < 1 || n > totalPages || n === currentPage) return;
+        currentPage = n;
+        renderDirectoryTable(filteredData);
+        scrollTableToTop();
+    }
+
+    function goToPrevPage() { goToPage(currentPage - 1); }
+    function goToNextPage() { goToPage(currentPage + 1); }
+
+    function scrollTableToTop() {
+        const wrapper = document.querySelector('.directory-scroll');
+        if (wrapper) wrapper.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // ------------------------------------------------------------
+    // Filter (resets to page 1)
     // ------------------------------------------------------------
     function filterDirectoryTable() {
         const searchInput  = document.getElementById('directory-search-input');
@@ -181,6 +272,7 @@
             return matchesSearch && matchesStatus;
         });
 
+        currentPage = 1;
         renderDirectoryTable(filtered);
     }
 
@@ -459,6 +551,9 @@
     window.triggerExcelImport    = triggerExcelImport;
     window.handleExcelImport     = handleExcelImport;
     window.exportToExcel         = exportToExcel;
+    window.goToPage              = goToPage;
+    window.goToPrevPage          = goToPrevPage;
+    window.goToNextPage          = goToNextPage;
 
     // ------------------------------------------------------------
     // Boot

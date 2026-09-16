@@ -68,7 +68,7 @@
             </div>
         </div>
 
-        <!-- DIRECTORY TABLE with horizontal scroll -->
+        <!-- DIRECTORY TABLE with horizontal scroll + pagination -->
         <div class="bg-white border border-ink-200 rounded-xl overflow-hidden">
             <div class="directory-scroll">
                 <table class="directory-table">
@@ -91,6 +91,25 @@
                     </thead>
                     <tbody id="directory-tbody"></tbody>
                 </table>
+            </div>
+
+            <!-- Pagination bar -->
+            <div class="directory-pagination">
+                <div class="directory-pagination-info">
+                    Showing <span id="pagination-range">0–0</span> of
+                    <span id="pagination-total">0</span> entries
+                </div>
+                <div class="directory-pagination-controls">
+                    <button id="pagination-prev" class="pagination-btn" onclick="goToPrevPage()" disabled>
+                        <i class="fa-solid fa-chevron-left text-[10px]"></i>
+                        <span>Prev</span>
+                    </button>
+                    <span id="pagination-pages" class="pagination-pages"></span>
+                    <button id="pagination-next" class="pagination-btn" onclick="goToNextPage()" disabled>
+                        <span>Next</span>
+                        <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                    </button>
+                </div>
             </div>
         </div>
     </div>

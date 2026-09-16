@@ -645,3 +645,119 @@ main { animation: page-enter 0.28s ease-out both; }
     background: #64748b;
     background-clip: padding-box;
 }
+
+/* ============================================================
+   DIRECTORY PAGINATION
+   ============================================================ */
+.directory-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.85rem 1rem;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    flex-wrap: wrap;
+}
+
+.directory-pagination-info {
+    font-size: 0.72rem;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.directory-pagination-info span {
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.directory-pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.pagination-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #334155;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: inherit;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+    color: #0f172a;
+}
+
+.pagination-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.pagination-pages {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    margin: 0 0.35rem;
+}
+
+.pagination-page {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 30px;
+    height: 30px;
+    padding: 0 0.5rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #475569;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: inherit;
+}
+
+.pagination-page:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+
+.pagination-page.is-active {
+    background: #15803d;
+    color: #ffffff;
+    border-color: #15803d;
+}
+
+.pagination-ellipsis {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 30px;
+    font-size: 0.72rem;
+    color: #94a3b8;
+    user-select: none;
+}
+
+@media (max-width: 640px) {
+    .directory-pagination {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.6rem;
+    }
+    .directory-pagination-controls {
+        justify-content: center;
+    }
+}
