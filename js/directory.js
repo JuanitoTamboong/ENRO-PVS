@@ -1,5 +1,5 @@
 // ============================================================
-// DIRECTORY PAGE — Supabase + Realtime + safe import + pagination + delete
+// DIRECTORY PAGE — Supabase + Realtime + safe import + pagination + delete + edit
 // ============================================================
 (function () {
     'use strict';
@@ -24,6 +24,12 @@
     // Delete state
     // ------------------------------------------------------------
     let deleteTargetId = null;
+
+    // ------------------------------------------------------------
+    // Edit state
+    // ------------------------------------------------------------
+    let editOriginalAllowed = 0;
+    let editOriginalRemaining = 0;
 
     // ------------------------------------------------------------
     // Delete All phrase
@@ -105,7 +111,7 @@
                 animation: modalTextIn 0.34s ease-out 0.14s both;
             }
 
-            /* --- Close (X) icon rotate — only the header X button --- */
+            /* --- Close (X) icon rotate --- */
             .modal-overlay .modal-close-icon {
                 transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
             }
@@ -241,7 +247,6 @@
 
         modal.classList.remove('closing');
         modal.style.display = 'flex';
-        // Force reflow so animation restarts
         void modal.offsetWidth;
         modal.classList.add('active');
     }
@@ -388,6 +393,12 @@
                                 View Ledger
                             </a>
                             <button type="button"
+                                    onclick="openEditModal('${p.id}')"
+                                    title="Edit record"
+                                    class="edit-btn">
+                                <i class="fa-solid fa-pen text-[10px]"></i>
+                            </button>
+                            <button type="button"
                                     onclick="openDeleteModal('${p.id}', '${safeName}')"
                                     title="Delete record"
                                     class="delete-btn">
@@ -533,6 +544,8 @@
         const areaValue = (document.getElementById('new-area')?.value || '').trim();
         const annualExtractionValue = (document.getElementById('new-annual-extraction')?.value || '').trim();
 
+        const allowedRounded = Math.round(allowed);
+
         const newRow = {
             name:          document.getElementById('new-name').value.trim().toUpperCase(),
             location:      document.getElementById('new-location').value.trim(),
@@ -541,8 +554,8 @@
             commodity:     document.getElementById('new-commodity').value,
             area:          areaValue,
             rate:          annualExtractionValue,
-            allowed_vol:   allowed,
-            remaining_vol: allowed,
+            allowed_vol:   allowedRounded,
+            remaining_vol: allowedRounded,
             start_date:    toIsoDate(document.getElementById('new-start-date').value),
             end_date:      toIsoDate(document.getElementById('new-end-date').value),
             status:        document.getElementById('new-status').value
@@ -569,6 +582,133 @@
 
         if (typeof window.showToast === 'function') {
             window.showToast('Permittee record added successfully.', 'success');
+        }
+    }
+
+    // ------------------------------------------------------------
+    // EDIT PERMIT — SMOOTH
+    // ------------------------------------------------------------
+    function openEditModal(id) {
+        const p = (window.permitteesData || []).find(x => String(x.id) === String(id));
+        if (!p) return;
+
+        editOriginalAllowed = Number(p.allowedVol) || 0;
+        editOriginalRemaining = Number(p.remainingVol) || 0;
+
+        document.getElementById('edit-id').value = p.id;
+        document.getElementById('edit-name').value = p.name || '';
+        document.getElementById('edit-location').value = p.location || '';
+        document.getElementById('edit-permit-no').value = p.permitNo || '';
+        document.getElementById('edit-permit-type').value = p.type || 'Commercial';
+        document.getElementById('edit-commodity').value = p.commodity || 'Sand & Gravel';
+        document.getElementById('edit-area').value = p.area || p.areaHas || '';
+        document.getElementById('edit-annual-extraction').value = p.rate || p.annualExtraction || '';
+        document.getElementById('edit-allowed-vol').value = Math.round(p.allowedVol);
+        document.getElementById('edit-remaining-vol').value = Math.round(p.remainingVol);
+        document.getElementById('edit-start-date').value = p.startDate || '';
+        document.getElementById('edit-end-date').value = p.endDate || '';
+        document.getElementById('edit-status').value = p.status || 'Active';
+
+        const subtitle = document.getElementById('edit-modal-subtitle');
+        if (subtitle) subtitle.innerText = p.name;
+
+        setupEditAutoCompute();
+
+        smoothOpenModal('modal-edit-entry');
+
+        const form = document.querySelector('#modal-edit-entry form');
+        if (form) form.scrollTop = 0;
+    }
+
+    function closeEditEntryModal() {
+        smoothCloseModal('modal-edit-entry', () => {
+            editOriginalAllowed = 0;
+            editOriginalRemaining = 0;
+        });
+    }
+
+    function setupEditAutoCompute() {
+        const allowedInput = document.getElementById('edit-allowed-vol');
+        const remainingInput = document.getElementById('edit-remaining-vol');
+
+        if (!allowedInput || !remainingInput) return;
+        if (allowedInput.__wiredEdit) return;
+        allowedInput.__wiredEdit = true;
+
+        allowedInput.addEventListener('input', function () {
+            const newAllowed = parseInt(this.value, 10) || 0;
+            const delta = newAllowed - editOriginalAllowed;
+            const newRemaining = Math.max(0, editOriginalRemaining + delta);
+            remainingInput.value = Math.round(newRemaining);
+        });
+    }
+
+    async function submitEditPermitEntry(e) {
+        e.preventDefault();
+
+        const client = getClient();
+        if (!client) {
+            console.error('[Directory] supabaseClient missing.');
+            return;
+        }
+
+        const id = document.getElementById('edit-id').value;
+        if (!id) return;
+
+        const newAllowedRaw = parseInt(document.getElementById('edit-allowed-vol').value, 10) || 0;
+        const newAllowed = Math.round(newAllowedRaw);
+
+        const delta = newAllowed - editOriginalAllowed;
+        const newRemaining = Math.max(0, Math.round(editOriginalRemaining + delta));
+
+        const updates = {
+            name:          document.getElementById('edit-name').value.trim().toUpperCase(),
+            location:      document.getElementById('edit-location').value.trim(),
+            permit_no:     document.getElementById('edit-permit-no').value.trim(),
+            type:          document.getElementById('edit-permit-type').value,
+            commodity:     document.getElementById('edit-commodity').value,
+            area:          (document.getElementById('edit-area').value || '').trim(),
+            rate:          (document.getElementById('edit-annual-extraction').value || '').trim(),
+            allowed_vol:   newAllowed,
+            remaining_vol: newRemaining,
+            start_date:    toIsoDate(document.getElementById('edit-start-date').value),
+            end_date:      toIsoDate(document.getElementById('edit-end-date').value),
+            status:        document.getElementById('edit-status').value
+        };
+
+        const btn = e.target.querySelector('button[type="submit"]');
+        const originalHTML = btn ? btn.innerHTML : 'Save Changes';
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xs"></i><span>Saving...</span>';
+        }
+
+        const { error } = await client
+            .from('permittees')
+            .update(updates)
+            .eq('id', id);
+
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
+        }
+
+        if (error) {
+            console.error('[Directory] update error:', error);
+            const msg = error.message || error.details || error.hint || JSON.stringify(error);
+            if (typeof window.showToast === 'function') {
+                window.showToast('Failed to update record: ' + msg, 'error');
+            }
+            return;
+        }
+
+        closeEditEntryModal();
+
+        window.permitteesData = await loadPermitteesFromSupabase();
+        filterDirectoryTable();
+
+        if (typeof window.showToast === 'function') {
+            window.showToast('Permittee record updated successfully.', 'success');
         }
     }
 
@@ -648,7 +788,6 @@
 
         smoothOpenModal('modal-delete-all');
 
-        // Wire up live input validation (only once)
         if (input && !input.__wired) {
             input.addEventListener('input', function () {
                 const confirmBtn = document.getElementById('delete-all-confirm-btn');
@@ -778,6 +917,8 @@
                             ? parseFloat(allowedVolRaw.replace(/[^0-9.-]+/g, '')) || 0
                             : numericVol;
 
+                        const allowedRounded = Math.round(allowedVol);
+
                         allImportedRows.push({
                             name:          name,
                             location:      fullLocation,
@@ -786,8 +927,8 @@
                             commodity:     String(row['COMMODITY'] || row['Commodity'] || row['commodity'] || 'Sand & Gravel').trim(),
                             area:          areaRaw,
                             rate:          rawVolStr,
-                            allowed_vol:   allowedVol,
-                            remaining_vol: allowedVol,
+                            allowed_vol:   allowedRounded,
+                            remaining_vol: allowedRounded,
                             start_date:    toIsoDate(row['START DATE'] || row['Start Date'] || row['startDate'] || row['ISSUED DATE']),
                             end_date:      toIsoDate(row['END DATE'] || row['End Date'] || row['endDate']),
                             status:        String(row['STATUS'] || row['Status'] || row['status'] || row['AREA STATUS CLEARANCE'] || 'Active').trim()
@@ -925,6 +1066,9 @@
     window.openAddEntryModal     = openAddEntryModal;
     window.closeAddEntryModal    = closeAddEntryModal;
     window.submitNewPermitEntry  = submitNewPermitEntry;
+    window.openEditModal         = openEditModal;
+    window.closeEditEntryModal   = closeEditEntryModal;
+    window.submitEditPermitEntry = submitEditPermitEntry;
     window.triggerExcelImport    = triggerExcelImport;
     window.handleExcelImport     = handleExcelImport;
     window.exportToExcel         = exportToExcel;

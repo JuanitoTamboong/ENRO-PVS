@@ -8,6 +8,12 @@ let annualAllPermittees = [];
 let annualCurrentPage = 1;
 const ANNUAL_PAGE_SIZE = 25;
 
+// ------------------------------------------------------------
+// Pricing / demo config
+// ------------------------------------------------------------
+const RATE_PER_CU_M = 100;             // ₱ per cubic meter (auto-compute amount)
+const DEMO_LEAVE_REMAINING = 50;       // Fill All leaves this much remaining
+
 function getClient() {
     return window.supabaseClient ||
            (typeof supabaseClient !== 'undefined' ? supabaseClient : null);
@@ -31,7 +37,6 @@ function mapTxRow(t) {
 
 // ------------------------------------------------------------
 // INJECT ANNUAL VOLUME MODAL ANIMATION CSS (once)
-// Matches the logout / directory modal look & feel
 // ------------------------------------------------------------
 function ensureAnnualModalStyles() {
     if (document.getElementById('annual-modal-animations')) return;
@@ -111,7 +116,7 @@ function ensureAnnualModalStyles() {
         #modal-add-tx.active .form-stagger > *:nth-child(5) { animation-delay: 0.26s; }
         #modal-add-tx.active .form-stagger > *:nth-child(6) { animation-delay: 0.30s; }
 
-        /* --- Close (X) icon rotate — only the header X button --- */
+        /* --- Close (X) icon rotate --- */
         #modal-add-tx .modal-close-icon {
             transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
         }
@@ -499,6 +504,59 @@ function renderLedgerTable(transactions) {
 }
 
 // ------------------------------------------------------------
+// Auto-fill remaining volume (Fill All button)
+// ------------------------------------------------------------
+function fillRemainingVolume() {
+    const p = (window.permitteesData || []).find(x => String(x.id) === selectedPermitteeId);
+    if (!p) return;
+
+    // Subtract target so we end up with a small remaining balance
+    const fillAmount = Math.max(0, Number(p.remainingVol) - DEMO_LEAVE_REMAINING);
+    const volInput = document.getElementById('tx-volume');
+    volInput.value = fillAmount.toFixed(2);
+
+    // Manually trigger the amount auto-compute
+    volInput.dispatchEvent(new Event('input'));
+
+    // Pre-fill DR # if empty
+    const drInput = document.getElementById('tx-dr-no');
+    if (drInput && !drInput.value) {
+        const d = new Date();
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        drInput.value = `DR-${yyyy}-${mm}${dd}`;
+    }
+
+    // Pre-fill OP # if empty
+    const opInput = document.getElementById('tx-op-no');
+    if (opInput && !opInput.value) opInput.value = 'OP-DEMO';
+
+    // Pre-fill Truck/Plate if empty
+    const truckInput = document.getElementById('tx-truck-load');
+    if (truckInput && !truckInput.value) truckInput.value = 'Demo Truck / NAK-000';
+}
+
+// ------------------------------------------------------------
+// Auto-compute Amount from Volume × RATE_PER_CU_M
+// ------------------------------------------------------------
+function setupAmountAutoCompute() {
+    const volInput = document.getElementById('tx-volume');
+    const amountInput = document.getElementById('tx-amount');
+    if (!volInput || !amountInput) return;
+
+    // Avoid double-wiring
+    if (volInput.__wiredAmount) return;
+    volInput.__wiredAmount = true;
+
+    volInput.addEventListener('input', function () {
+        const vol = parseFloat(this.value) || 0;
+        const amt = vol * RATE_PER_CU_M;
+        amountInput.value = amt.toFixed(2);
+    });
+}
+
+// ------------------------------------------------------------
 // Add Transaction Modal — SMOOTH
 // ------------------------------------------------------------
 function openAddTransactionModal() {
@@ -509,6 +567,9 @@ function openAddTransactionModal() {
     document.getElementById('tx-modal-permittee-name').innerText = p.name;
     document.getElementById('tx-modal-current-balance').innerText = `${fmt(p.remainingVol)} cu.m`;
     document.getElementById('tx-modal-error').classList.add('hidden');
+
+    // Wire up auto-compute BEFORE showing the modal
+    setupAmountAutoCompute();
 
     smoothOpenModal('modal-add-tx');
 
@@ -529,7 +590,13 @@ function openAddTransactionModal() {
 }
 
 function closeAddTransactionModal() {
-    smoothCloseModal('modal-add-tx');
+    smoothCloseModal('modal-add-tx', () => {
+        // Clear any leftover values so the next open starts clean
+        const amountInput = document.getElementById('tx-amount');
+        if (amountInput) amountInput.value = '';
+        const volInput = document.getElementById('tx-volume');
+        if (volInput) volInput.value = '';
+    });
 }
 
 async function submitTransactionEntry(e) {
@@ -606,3 +673,4 @@ window.submitTransactionEntry   = submitTransactionEntry;
 window.goToAnnualPage           = goToAnnualPage;
 window.goToAnnualPrevPage       = goToAnnualPrevPage;
 window.goToAnnualNextPage       = goToAnnualNextPage;
+window.fillRemainingVolume      = fillRemainingVolume;

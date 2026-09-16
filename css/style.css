@@ -561,10 +561,11 @@ main { animation: page-enter 0.28s ease-out both; }
 }
 
 .directory-table {
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
     width: 100%;
-    min-width: 1600px;
-    table-layout: auto;
+    min-width: 1800px;
+    table-layout: fixed;
 }
 
 .directory-table thead th {
@@ -594,16 +595,102 @@ main { animation: page-enter 0.28s ease-out both; }
 .directory-table tbody tr:last-child td { border-bottom: none; }
 .directory-table tbody tr:hover td { background: #f8fafc; }
 
-.directory-table tbody td:nth-child(1) {
+/* --- Explicit column widths for the 13-column directory table --- */
+.directory-table th:nth-child(1),
+.directory-table td:nth-child(1) {
+    width: 220px;
+    min-width: 220px;
+    text-align: left;
     font-weight: 700;
     color: #0f172a;
-    min-width: 170px;
 }
 
-.directory-table tbody td:nth-child(2),
-.directory-table tbody td:nth-child(5) {
+.directory-table th:nth-child(2),
+.directory-table td:nth-child(2) {
+    width: 260px;
+    min-width: 260px;
+    text-align: left;
     color: #64748b;
     font-size: 0.72rem;
+}
+
+.directory-table th:nth-child(3),
+.directory-table td:nth-child(3) {
+    width: 140px;
+    min-width: 140px;
+    text-align: left;
+}
+
+.directory-table th:nth-child(4),
+.directory-table td:nth-child(4) {
+    width: 110px;
+    min-width: 110px;
+    text-align: left;
+}
+
+.directory-table th:nth-child(5),
+.directory-table td:nth-child(5) {
+    width: 130px;
+    min-width: 130px;
+    text-align: left;
+    color: #64748b;
+    font-size: 0.72rem;
+}
+
+.directory-table th:nth-child(6),
+.directory-table td:nth-child(6) {
+    width: 90px;
+    min-width: 90px;
+    text-align: right;
+}
+
+.directory-table th:nth-child(7),
+.directory-table td:nth-child(7) {
+    width: 150px;
+    min-width: 150px;
+    text-align: right;
+}
+
+.directory-table th:nth-child(8),
+.directory-table td:nth-child(8) {
+    width: 110px;
+    min-width: 110px;
+    text-align: right;
+}
+
+.directory-table th:nth-child(9),
+.directory-table td:nth-child(9) {
+    width: 110px;
+    min-width: 110px;
+    text-align: right;
+}
+
+.directory-table th:nth-child(10),
+.directory-table td:nth-child(10) {
+    width: 110px;
+    min-width: 110px;
+    text-align: center;
+}
+
+.directory-table th:nth-child(11),
+.directory-table td:nth-child(11) {
+    width: 110px;
+    min-width: 110px;
+    text-align: center;
+}
+
+.directory-table th:nth-child(12),
+.directory-table td:nth-child(12) {
+    width: 140px;
+    min-width: 140px;
+    text-align: center;
+}
+
+.directory-table th:nth-child(13),
+.directory-table td:nth-child(13) {
+    width: 230px;
+    min-width: 230px;
+    text-align: center;
 }
 
 .directory-table .status-badge {
@@ -745,12 +832,42 @@ main { animation: page-enter 0.28s ease-out both; }
 }
 
 /* ============================================================
-   DELETE BUTTON
+   ACTION BUTTONS — Edit + Delete
    ============================================================ */
-.directory-table tbody td:nth-child(13) {
-    min-width: 160px;
+
+/* --- Edit button (blue pencil) --- */
+.directory-table .edit-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    color: #1d4ed8;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: inherit;
+    flex-shrink: 0;
 }
 
+.directory-table .edit-btn:hover {
+    color: #ffffff;
+    background: #1d4ed8;
+    border-color: #1d4ed8;
+    transform: scale(1.05);
+}
+
+.directory-table .edit-btn:active { transform: scale(0.95); }
+
+.directory-table .edit-btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.2);
+}
+
+/* --- Delete button (red trash) --- */
 .directory-table .delete-btn {
     display: inline-flex;
     align-items: center;
@@ -1068,15 +1185,6 @@ main { animation: page-enter 0.28s ease-out both; }
 #annual-transactions-tbody td:first-child {
     position: static;
     box-shadow: none;
-}
-
-/* Keep the header of the first column sticky too */
-.directory-table thead th:first-child {
-    position: sticky;
-    left: 0;
-    z-index: 3;
-    background: #f8fafc;
-    box-shadow: 2px 0 4px -2px rgba(0,0,0,0.06);
 }
 
 /* ============================================================

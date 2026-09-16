@@ -50,7 +50,6 @@
                     </table>
                 </div>
 
-                <!-- PAGINATION BAR -->
                 <div class="directory-pagination">
                     <div class="directory-pagination-info">
                         Showing <span id="annual-pagination-range">0–0</span> of
@@ -71,9 +70,6 @@
             </div>
         </div>
 
-        <!-- ============================================================
-             LEVEL 2: LEDGER VIEW
-             ============================================================ -->
         <div id="annual-level-2-ledger" class="hidden space-y-5">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div class="breadcrumb">
@@ -191,7 +187,17 @@
             </div>
 
             <div class="form-section">
-                <h4 class="form-section-title">Transaction Details</h4>
+                <!-- Section header with Fill All button on the right -->
+                <div class="flex items-center justify-between mb-3">
+                    <h4 class="form-section-title !mb-0">Transaction Details</h4>
+                    <button type="button" onclick="fillRemainingVolume()"
+                            title="Auto-fill to leave 50 cu.m remaining"
+                            class="btn-secondary flex-shrink-0 whitespace-nowrap text-[10px] px-2.5 py-1">
+                        <i class="fa-solid fa-wand-magic-sparkles text-[9px]"></i>
+                        <span>Fill All</span>
+                    </button>
+                </div>
+
                 <div class="space-y-3">
                     <div class="grid grid-cols-2 gap-3">
                         <div>
@@ -206,11 +212,16 @@
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-[11px] font-bold text-ink-600 mb-1">Volume (cu.m) *</label>
-                            <input type="number" step="0.01" min="0.01" id="tx-volume" required class="input-field font-bold text-rose-600" placeholder="50">
+                            <input type="number" step="0.01" min="0.01" id="tx-volume" required
+                                   class="input-field font-bold text-rose-600" placeholder="50">
                         </div>
                         <div>
-                            <label class="block text-[11px] font-bold text-ink-600 mb-1">Amount (₱) *</label>
-                            <input type="number" step="0.01" min="0" id="tx-amount" required class="input-field" placeholder="4500">
+                            <label class="block text-[11px] font-bold text-ink-600 mb-1">
+                                Amount (₱) *
+                                <span class="text-[10px] text-ink-400 font-normal normal-case">(auto)</span>
+                            </label>
+                            <input type="number" step="0.01" min="0" id="tx-amount" required
+                                   class="input-field font-bold text-enro-800" placeholder="0.00">
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-3">
