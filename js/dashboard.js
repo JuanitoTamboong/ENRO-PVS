@@ -7,6 +7,29 @@ function getClient() {
            (typeof supabaseClient !== 'undefined' ? supabaseClient : null);
 }
 
+// ------------------------------------------------------------
+// AUTO-COMPUTE STATUS from remaining volume
+// (same logic as annual-volume.js — keeps all pages consistent)
+// ------------------------------------------------------------
+function computeStatus(remaining, allowed) {
+    remaining = Number(remaining) || 0;
+    allowed = Number(allowed) || 0;
+
+    if (remaining <= 0) {
+        return { label: 'Fully Consumed', css: 'bg-rose-50 text-rose-700 border-rose-200' };
+    }
+    if (remaining <= 100) {
+        return { label: 'Nearly Exhausted', css: 'bg-rose-50 text-rose-700 border-rose-200' };
+    }
+    const pct = allowed > 0 ? (remaining / allowed) * 100 : 0;
+    if (pct <= 25) {
+        return { label: 'Low Production', css: 'bg-amber-50 text-amber-700 border-amber-200' };
+    }
+    return { label: 'Active', css: 'bg-enro-50 text-enro-700 border-enro-200' };
+}
+
+window.computeStatus = computeStatus;
+
 async function fetchPermittees() {
     const client = getClient();
     if (!client) return [];
@@ -54,7 +77,6 @@ function renderHubRecent(permittees) {
     const recent = permittees.slice(0, 4);
     const esc    = window.escapeHtml   || ((s) => s);
     const fmt    = window.formatNumber || ((n) => n);
-    const stat   = window.getStatusInfo || ((p) => ({ label: p.status || 'Active', css: '' }));
 
     if (recent.length === 0) {
         container.innerHTML = `
@@ -68,7 +90,9 @@ function renderHubRecent(permittees) {
     }
 
     container.innerHTML = recent.map(p => {
-        const s = stat(p);
+        // ★ AUTO-COMPUTE status (consistent with other pages)
+        const s = window.computeStatus(p.remainingVol, p.allowedVol);
+
         const initials = String(p.name || '')
             .split(' ')
             .filter(Boolean)

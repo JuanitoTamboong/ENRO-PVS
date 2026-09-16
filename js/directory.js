@@ -37,6 +37,34 @@
     const DELETE_ALL_PHRASE = 'DELETE ALL';
 
     // ------------------------------------------------------------
+    // AUTO-COMPUTE STATUS (matches dashboard & annual-volume)
+    // ------------------------------------------------------------
+    function computeStatus(remaining, allowed) {
+        remaining = Number(remaining) || 0;
+        allowed = Number(allowed) || 0;
+
+        if (remaining <= 0) {
+            return { label: 'Fully Consumed', css: 'bg-rose-50 text-rose-700 border-rose-200' };
+        }
+        if (remaining <= 100) {
+            return { label: 'Nearly Exhausted', css: 'bg-rose-50 text-rose-700 border-rose-200' };
+        }
+        const pct = allowed > 0 ? (remaining / allowed) * 100 : 0;
+        if (pct <= 25) {
+            return { label: 'Low Production', css: 'bg-amber-50 text-amber-700 border-amber-200' };
+        }
+        return { label: 'Active', css: 'bg-enro-50 text-enro-700 border-enro-200' };
+    }
+
+    function getStatusFor(p) {
+        // Prefer global computeStatus (shared across pages)
+        if (typeof window.computeStatus === 'function') {
+            return window.computeStatus(p.remainingVol, p.allowedVol);
+        }
+        return computeStatus(p.remainingVol, p.allowedVol);
+    }
+
+    // ------------------------------------------------------------
     // INJECT DIRECTORY MODAL ANIMATION CSS (once)
     // ------------------------------------------------------------
     function ensureDirectoryModalStyles() {
@@ -45,7 +73,6 @@
         const style = document.createElement('style');
         style.id = 'directory-modal-animations';
         style.innerHTML = `
-            /* --- Overlay fade in / out --- */
             @keyframes modalOverlayIn {
                 from { opacity: 0; }
                 to   { opacity: 1; }
@@ -54,8 +81,6 @@
                 from { opacity: 1; }
                 to   { opacity: 0; }
             }
-
-            /* --- Card spring pop in / out --- */
             @keyframes modalCardIn {
                 0%   { opacity: 0; transform: translateY(24px) scale(0.92); }
                 60%  { opacity: 1; transform: translateY(-4px) scale(1.02); }
@@ -65,21 +90,16 @@
                 0%   { opacity: 1; transform: translateY(0) scale(1); }
                 100% { opacity: 0; transform: translateY(16px) scale(0.94); }
             }
-
-            /* --- Icon pop --- */
             @keyframes modalIconPop {
                 0%   { opacity: 0; transform: scale(0.5) rotate(-90deg); }
                 60%  { opacity: 1; transform: scale(1.15) rotate(8deg); }
                 100% { opacity: 1; transform: scale(1) rotate(0deg); }
             }
-
-            /* --- Staggered text fade --- */
             @keyframes modalTextIn {
                 from { opacity: 0; transform: translateY(6px); }
                 to   { opacity: 1; transform: translateY(0); }
             }
 
-            /* --- Apply to any directory modal overlay --- */
             .modal-overlay.active {
                 animation: modalOverlayIn 0.26s ease-out both;
             }
@@ -87,7 +107,6 @@
                 animation: modalOverlayOut 0.22s ease-in both;
             }
 
-            /* --- Card --- */
             .modal-overlay.active > .modal-card,
             .modal-overlay.active > .logout-card,
             .modal-overlay.active > div:not(.modal-card):not(.logout-card) {
@@ -100,18 +119,15 @@
                 animation: modalCardOut 0.24s ease-in both;
             }
 
-            /* --- Icon inside modal --- */
             .modal-overlay.active [style*="border-radius:9999px"] {
                 animation: modalIconPop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) 0.08s both;
             }
 
-            /* --- Staggered content --- */
             .modal-overlay.active > div > .p-5,
             .modal-overlay.active .form-section {
                 animation: modalTextIn 0.34s ease-out 0.14s both;
             }
 
-            /* --- Close (X) icon rotate --- */
             .modal-overlay .modal-close-icon {
                 transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
             }
@@ -119,7 +135,6 @@
                 transform: rotate(90deg) scale(1.05);
             }
 
-            /* --- Keep modal action buttons from squishing --- */
             .modal-overlay .btn-secondary,
             .modal-overlay .btn-primary,
             .modal-overlay .modal-btn {
@@ -127,7 +142,6 @@
                 white-space: nowrap;
             }
 
-            /* --- Input focus glow --- */
             .modal-overlay .input-field {
                 transition: border-color 0.2s ease, box-shadow 0.25s ease, background 0.2s ease;
             }
@@ -141,7 +155,6 @@
                 cursor: default;
             }
 
-            /* --- Smooth select arrow --- */
             .modal-overlay select.input-field {
                 appearance: none;
                 background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
@@ -151,7 +164,6 @@
                 padding-right: 2rem;
             }
 
-            /* --- Section title underline animation --- */
             .modal-overlay.active .form-section-title {
                 position: relative;
                 display: inline-block;
@@ -171,7 +183,6 @@
                 to   { width: 100%; }
             }
 
-            /* --- Button micro-interactions --- */
             .modal-overlay .btn-primary,
             .modal-overlay .btn-secondary,
             .modal-overlay .modal-btn {
@@ -199,7 +210,6 @@
                 100% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0); }
             }
 
-            /* --- Success pulse for auto-filled remaining volume --- */
             @keyframes volumePulse {
                 0%   { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.3); }
                 70%  { box-shadow: 0 0 0 8px rgba(22, 163, 74, 0); }
@@ -353,16 +363,18 @@
         const start = (currentPage - 1) * PAGE_SIZE;
         const pageRows = filteredData.slice(start, start + PAGE_SIZE);
 
-        const fmt  = window.formatNumber || ((n) => n);
-        const stat = window.getStatusInfo || ((p) => ({ label: p.status || '', css: '' }));
-        const esc  = window.escapeHtml    || ((s) => s);
+        const fmt = window.formatNumber || ((n) => n);
+        const esc = window.escapeHtml    || ((s) => s);
 
         tbody.innerHTML = pageRows.map(p => {
-            const s = stat(p);
+            // ★ AUTO-COMPUTE status (consistent across pages)
+            const s = getStatusFor(p);
+
             const area             = p.area || p.areaHas || '—';
             const annualExtraction = p.rate || p.annualExtraction || '—';
             const startDate        = formatDateDisplay(p.startDate);
             const endDate          = formatDateDisplay(p.endDate);
+            const remainingNum     = Number(p.remainingVol) || 0;
 
             const safeName = String(p.name || '').replace(/'/g, "\\'");
 
@@ -380,7 +392,7 @@
                     <td class="text-right font-semibold text-ink-700">${esc(area)}</td>
                     <td class="text-right font-semibold text-ink-700">${esc(annualExtraction)}</td>
                     <td class="text-right font-semibold text-ink-700">${fmt(p.allowedVol)}</td>
-                    <td class="text-right font-bold ${p.remainingVol <= 100 ? 'text-rose-600' : 'text-enro-700'}">
+                    <td class="text-right font-bold ${remainingNum <= 100 ? 'text-rose-600' : 'text-enro-700'}">
                         ${fmt(p.remainingVol)}
                     </td>
                     <td class="text-center text-ink-500">${esc(startDate)}</td>
@@ -494,15 +506,14 @@
         const q = searchInput ? searchInput.value.toLowerCase() : '';
         const selectedStatus = statusFilter ? statusFilter.value : '';
 
-        const stat = window.getStatusInfo || ((p) => ({ label: p.status }));
-
         const filtered = (window.permitteesData || []).filter(p => {
             const matchesSearch =
                 (p.name     || '').toLowerCase().includes(q) ||
                 (p.permitNo || '').toLowerCase().includes(q) ||
                 (p.location || '').toLowerCase().includes(q);
 
-            const statusInfo = stat(p);
+            // ★ AUTO-COMPUTE for status filtering (matches render)
+            const statusInfo = getStatusFor(p);
             const matchesStatus = (selectedStatus === '' || statusInfo.label === selectedStatus);
 
             return matchesSearch && matchesStatus;
@@ -1031,7 +1042,7 @@
             'REMAINING VOLUME':        p.remainingVol,
             'START DATE':              p.startDate,
             'END DATE':                p.endDate,
-            'STATUS':                  p.status
+            'STATUS':                  getStatusFor(p).label
         }));
 
         const worksheet = XLSX.utils.json_to_sheet(exportData);

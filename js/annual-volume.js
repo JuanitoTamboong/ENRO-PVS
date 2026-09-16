@@ -9,10 +9,9 @@ let annualCurrentPage = 1;
 const ANNUAL_PAGE_SIZE = 25;
 
 // ------------------------------------------------------------
-// Pricing / demo config
+// Config
 // ------------------------------------------------------------
-const RATE_PER_CU_M = 100;             // ₱ per cubic meter (auto-compute amount)
-const DEMO_LEAVE_REMAINING = 50;       // Fill All leaves this much remaining
+const LOW_VOLUME_THRESHOLD = 100;
 
 function getClient() {
     return window.supabaseClient ||
@@ -36,6 +35,26 @@ function mapTxRow(t) {
 }
 
 // ------------------------------------------------------------
+// AUTO-COMPUTE STATUS from remaining volume
+// ------------------------------------------------------------
+function computeStatus(remaining, allowed) {
+    remaining = Number(remaining) || 0;
+    allowed = Number(allowed) || 0;
+
+    if (remaining <= 0) {
+        return { label: 'Fully Consumed', css: 'bg-rose-50 text-rose-700 border-rose-200' };
+    }
+    if (remaining <= LOW_VOLUME_THRESHOLD) {
+        return { label: 'Nearly Exhausted', css: 'bg-rose-50 text-rose-700 border-rose-200' };
+    }
+    const pct = allowed > 0 ? (remaining / allowed) * 100 : 0;
+    if (pct <= 25) {
+        return { label: 'Low Production', css: 'bg-amber-50 text-amber-700 border-amber-200' };
+    }
+    return { label: 'Active', css: 'bg-enro-50 text-enro-700 border-enro-200' };
+}
+
+// ------------------------------------------------------------
 // INJECT ANNUAL VOLUME MODAL ANIMATION CSS (once)
 // ------------------------------------------------------------
 function ensureAnnualModalStyles() {
@@ -44,7 +63,6 @@ function ensureAnnualModalStyles() {
     const style = document.createElement('style');
     style.id = 'annual-modal-animations';
     style.innerHTML = `
-        /* --- Overlay fade in / out --- */
         @keyframes annualOverlayIn {
             from { opacity: 0; }
             to   { opacity: 1; }
@@ -53,8 +71,6 @@ function ensureAnnualModalStyles() {
             from { opacity: 1; }
             to   { opacity: 0; }
         }
-
-        /* --- Card spring pop in / out --- */
         @keyframes annualCardIn {
             0%   { opacity: 0; transform: translateY(24px) scale(0.92); }
             60%  { opacity: 1; transform: translateY(-4px) scale(1.02); }
@@ -64,34 +80,26 @@ function ensureAnnualModalStyles() {
             0%   { opacity: 1; transform: translateY(0) scale(1); }
             100% { opacity: 0; transform: translateY(16px) scale(0.94); }
         }
-
-        /* --- Icon pop --- */
         @keyframes annualIconPop {
             0%   { opacity: 0; transform: scale(0.5) rotate(-90deg); }
             60%  { opacity: 1; transform: scale(1.15) rotate(8deg); }
             100% { opacity: 1; transform: scale(1) rotate(0deg); }
         }
-
-        /* --- Staggered text fade --- */
         @keyframes annualTextIn {
             from { opacity: 0; transform: translateY(6px); }
             to   { opacity: 1; transform: translateY(0); }
         }
-
-        /* --- Section title underline --- */
         @keyframes annualSectionUnderline {
             from { width: 0; }
             to   { width: 100%; }
         }
 
-        /* --- Apply to the transaction modal --- */
         #modal-add-tx.active {
             animation: annualOverlayIn 0.26s ease-out both;
         }
         #modal-add-tx.closing {
             animation: annualOverlayOut 0.22s ease-in both;
         }
-
         #modal-add-tx.active .modal-card {
             animation: annualCardIn 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) both;
             transform-origin: center center;
@@ -99,13 +107,9 @@ function ensureAnnualModalStyles() {
         #modal-add-tx.closing .modal-card {
             animation: annualCardOut 0.24s ease-in both;
         }
-
-        /* --- Icon inside modal --- */
         #modal-add-tx.active [style*="border-radius:9999px"] {
             animation: annualIconPop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) 0.08s both;
         }
-
-        /* --- Staggered form rows --- */
         #modal-add-tx.active .form-stagger > * {
             animation: annualTextIn 0.34s ease-out both;
         }
@@ -116,7 +120,6 @@ function ensureAnnualModalStyles() {
         #modal-add-tx.active .form-stagger > *:nth-child(5) { animation-delay: 0.26s; }
         #modal-add-tx.active .form-stagger > *:nth-child(6) { animation-delay: 0.30s; }
 
-        /* --- Close (X) icon rotate --- */
         #modal-add-tx .modal-close-icon {
             transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
         }
@@ -124,7 +127,6 @@ function ensureAnnualModalStyles() {
             transform: rotate(90deg) scale(1.05);
         }
 
-        /* --- Keep modal action buttons from squishing --- */
         #modal-add-tx .btn-secondary,
         #modal-add-tx .btn-primary,
         #modal-add-tx .modal-btn {
@@ -132,7 +134,6 @@ function ensureAnnualModalStyles() {
             white-space: nowrap;
         }
 
-        /* --- Input focus glow --- */
         #modal-add-tx .input-field {
             transition: border-color 0.2s ease, box-shadow 0.25s ease, background 0.2s ease;
         }
@@ -142,7 +143,6 @@ function ensureAnnualModalStyles() {
             background: #fafffb;
         }
 
-        /* --- Section title underline animation --- */
         #modal-add-tx.active .form-section-title {
             position: relative;
             display: inline-block;
@@ -158,7 +158,6 @@ function ensureAnnualModalStyles() {
             animation: annualSectionUnderline 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both;
         }
 
-        /* --- Button micro-interactions --- */
         #modal-add-tx .btn-primary,
         #modal-add-tx .btn-secondary,
         #modal-add-tx .modal-btn {
@@ -308,17 +307,16 @@ function renderAnnualLevel1List(data) {
     const start = (annualCurrentPage - 1) * ANNUAL_PAGE_SIZE;
     const pageRows = annualAllPermittees.slice(start, start + ANNUAL_PAGE_SIZE);
 
-    const stat = window.getStatusInfo || ((p) => ({ label: p.status || 'Active', css: '' }));
     const esc  = window.escapeHtml    || ((s) => s);
     const fmt  = window.formatNumber  || ((n) => n);
 
     tbody.innerHTML = pageRows.map(p => {
-        const s = stat(p);
+        const s = computeStatus(p.remainingVol, p.allowedVol);
         return `
             <tr class="cursor-pointer" onclick="openAnnualLedgerById('${p.id}')">
                 <td class="font-bold text-ink-900">${esc(p.name)}</td>
                 <td><span class="font-mono text-xs font-semibold text-enro-700">${esc(p.permitNo)}</span></td>
-                <td class="text-right font-bold ${p.remainingVol <= 100 ? 'text-rose-600' : 'text-enro-700'}">
+                <td class="text-right font-bold ${p.remainingVol <= LOW_VOLUME_THRESHOLD ? 'text-rose-600' : 'text-enro-700'}">
                     ${fmt(p.remainingVol)} <span class="text-[10px] font-normal text-ink-400">cu.m</span>
                 </td>
                 <td class="text-right text-ink-600">
@@ -432,7 +430,6 @@ async function loadPermitteeLedger(id) {
 
     const esc = window.escapeHtml   || ((s) => s);
     const fmt = window.formatNumber || ((n) => n);
-    const stat = window.getStatusInfo || ((p) => ({ label: p.status || 'Active', css: '' }));
 
     document.getElementById('annual-permittee-select').value = selectedPermitteeId;
     document.getElementById('breadcrumb-name').innerText = p.name;
@@ -442,15 +439,28 @@ async function loadPermitteeLedger(id) {
     document.getElementById('av-permit-no').innerText = p.permitNo;
     document.getElementById('av-dates').innerText = `${p.startDate || '—'} → ${p.endDate || '—'}`;
     document.getElementById('av-allowed').innerText = `${fmt(p.allowedVol)} cu.m`;
-    document.getElementById('av-rate').innerText = `Rate: ${p.rate || '—'}`;
     document.getElementById('av-remaining').innerText = `${fmt(p.remainingVol)} cu.m`;
 
-    const s = stat(p);
+    // Show used volume + percentage instead of redundant rate
+    const allowed = Number(p.allowedVol) || 0;
+    const remaining = Number(p.remainingVol) || 0;
+    const used = allowed - remaining;
+    const usedPct = allowed > 0 ? ((used / allowed) * 100).toFixed(1) : 0;
+
+    const rateEl = document.getElementById('av-rate');
+    if (used > 0) {
+        rateEl.innerHTML = `Used: <strong class="text-ink-700">${fmt(used)}</strong> cu.m <span class="text-ink-400">(${usedPct}%)</span>`;
+    } else {
+        rateEl.innerHTML = `<span class="text-ink-400">No extraction yet</span>`;
+    }
+
+    // Auto-compute status from remaining volume
+    const s = computeStatus(remaining, allowed);
     document.getElementById('av-status-tag').className = `status-badge ${s.css}`;
     document.getElementById('av-status-tag').innerText = s.label;
 
     document.getElementById('warning-low-volume-banner')
-        .classList.toggle('hidden', p.remainingVol > 100);
+        .classList.toggle('hidden', remaining > LOW_VOLUME_THRESHOLD);
 
     const client = getClient();
     const { data: txs, error } = await client
@@ -510,15 +520,12 @@ function fillRemainingVolume() {
     const p = (window.permitteesData || []).find(x => String(x.id) === selectedPermitteeId);
     if (!p) return;
 
-    // Subtract target so we end up with a small remaining balance
-    const fillAmount = Math.max(0, Number(p.remainingVol) - DEMO_LEAVE_REMAINING);
     const volInput = document.getElementById('tx-volume');
-    volInput.value = fillAmount.toFixed(2);
+    const remaining = Number(p.remainingVol) || 0;
 
-    // Manually trigger the amount auto-compute
+    volInput.value = remaining.toFixed(2);
     volInput.dispatchEvent(new Event('input'));
 
-    // Pre-fill DR # if empty
     const drInput = document.getElementById('tx-dr-no');
     if (drInput && !drInput.value) {
         const d = new Date();
@@ -527,33 +534,6 @@ function fillRemainingVolume() {
         const dd = String(d.getDate()).padStart(2, '0');
         drInput.value = `DR-${yyyy}-${mm}${dd}`;
     }
-
-    // Pre-fill OP # if empty
-    const opInput = document.getElementById('tx-op-no');
-    if (opInput && !opInput.value) opInput.value = 'OP-DEMO';
-
-    // Pre-fill Truck/Plate if empty
-    const truckInput = document.getElementById('tx-truck-load');
-    if (truckInput && !truckInput.value) truckInput.value = 'Demo Truck / NAK-000';
-}
-
-// ------------------------------------------------------------
-// Auto-compute Amount from Volume × RATE_PER_CU_M
-// ------------------------------------------------------------
-function setupAmountAutoCompute() {
-    const volInput = document.getElementById('tx-volume');
-    const amountInput = document.getElementById('tx-amount');
-    if (!volInput || !amountInput) return;
-
-    // Avoid double-wiring
-    if (volInput.__wiredAmount) return;
-    volInput.__wiredAmount = true;
-
-    volInput.addEventListener('input', function () {
-        const vol = parseFloat(this.value) || 0;
-        const amt = vol * RATE_PER_CU_M;
-        amountInput.value = amt.toFixed(2);
-    });
 }
 
 // ------------------------------------------------------------
@@ -568,12 +548,8 @@ function openAddTransactionModal() {
     document.getElementById('tx-modal-current-balance').innerText = `${fmt(p.remainingVol)} cu.m`;
     document.getElementById('tx-modal-error').classList.add('hidden');
 
-    // Wire up auto-compute BEFORE showing the modal
-    setupAmountAutoCompute();
-
     smoothOpenModal('modal-add-tx');
 
-    // Reset form scroll to top
     const form = document.querySelector('#modal-add-tx form');
     if (form) form.scrollTop = 0;
 
@@ -582,7 +558,6 @@ function openAddTransactionModal() {
         dateInput.value = new Date().toISOString().slice(0, 10);
     }
 
-    // Focus first input after animation
     setTimeout(() => {
         const first = document.getElementById('tx-date');
         if (first) first.focus();
@@ -591,7 +566,6 @@ function openAddTransactionModal() {
 
 function closeAddTransactionModal() {
     smoothCloseModal('modal-add-tx', () => {
-        // Clear any leftover values so the next open starts clean
         const amountInput = document.getElementById('tx-amount');
         if (amountInput) amountInput.value = '';
         const volInput = document.getElementById('tx-volume');
@@ -649,7 +623,7 @@ async function submitTransactionEntry(e) {
 
     const fmt = window.formatNumber || ((n) => n);
     const balanceNum = Number(newBalance);
-    if (balanceNum <= 100) {
+    if (balanceNum <= LOW_VOLUME_THRESHOLD) {
         window.showToast && window.showToast(
             `⚠ LOW BALANCE: ${p.name} now has only ${fmt(balanceNum)} cu.m remaining.`,
             'info'
