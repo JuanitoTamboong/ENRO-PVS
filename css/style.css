@@ -1037,3 +1037,39 @@ main { animation: page-enter 0.28s ease-out both; }
         padding: 0.75rem 1rem;
     }
 }
+
+/* ============================================================
+   SEARCH INPUT — clean icon + text spacing
+   ============================================================ */
+.directory-search-wrap {
+    position: relative;
+    display: block;
+    width: 100%;
+}
+
+.directory-search-icon {
+    position: absolute;
+    left: 0.95rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.8rem;
+    color: #94a3b8;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.directory-search-input {
+    padding-left: 2.5rem !important;   /* 40px — comfortable gap after the icon */
+    padding-right: 0.875rem;
+}
+
+/* Optional: slightly larger icon on mobile for better tapping visual */
+@media (max-width: 640px) {
+    .directory-search-icon {
+        left: 1rem;
+        font-size: 0.85rem;
+    }
+    .directory-search-input {
+        padding-left: 2.65rem !important;
+    }
+}
