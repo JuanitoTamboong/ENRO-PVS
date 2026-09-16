@@ -122,7 +122,7 @@
     window.permitteesData = window.permitteesData || window.loadPermittees();
 
     // ------------------------------------------------------------
-    // AUTH + LOGOUT
+    // AUTH + ROLE HELPERS
     // ------------------------------------------------------------
     function normalizeLoginRole(role) {
         return role?.toString().toLowerCase().replace(/[\s-]+/g, '_');
@@ -130,9 +130,87 @@
     function getAccountRole(user) {
         return normalizeLoginRole(user?.app_metadata?.role || user?.user_metadata?.role);
     }
+    function getRoleLabel(user) {
+        const r = getAccountRole(user);
+        if (r === 'admin')       return 'Admin';
+        if (r === 'admin_staff') return 'Admin Staff';
+        return 'User';
+    }
 
-    window.handleLogout = async function () {
+    // ------------------------------------------------------------
+    // LOGOUT CONFIRMATION MODAL — with inline-styled icon circle
+    // ------------------------------------------------------------
+    window.openLogoutModal = function () {
+        // Remove any existing modal first
+        const existing = document.getElementById('modal-logout-confirm');
+        if (existing) existing.remove();
+
+        // Build the modal HTML (icon uses inline styles so it always
+        // renders as a perfect 48×48 rose circle — no Tailwind needed)
+        const modalHTML = `
+        <div id="modal-logout-confirm" class="modal-overlay active" style="z-index:100;">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+                <div class="p-5 text-center">
+                    <div style="width:48px;height:48px;margin:0 auto 12px;border-radius:9999px;background:#fff1f2;display:flex;align-items:center;justify-content:center;">
+                        <i class="fa-solid fa-arrow-right-from-bracket" style="color:#f43f5e;font-size:1.1rem;"></i>
+                    </div>
+                    <h3 class="text-sm font-bold text-ink-900">Sign out?</h3>
+                    <p class="text-[11px] text-ink-500 mt-1.5 leading-relaxed">
+                        You will be returned to the login page.<br>
+                        Any unsaved changes will be lost.
+                    </p>
+                    <p class="text-[10px] text-ink-400 mt-2 font-semibold" id="logout-user-email">
+                        Signed in as <span class="text-ink-700">—</span>
+                    </p>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" onclick="closeLogoutModal()" class="modal-btn modal-btn--cancel">
+                        Cancel
+                    </button>
+                    <button type="button" id="logout-confirm-btn" onclick="confirmLogout()"
+                            class="modal-btn modal-btn--danger">
+                        <i class="fa-solid fa-right-from-bracket text-[10px] mr-1"></i>
+                        Sign out
+                    </button>
+                </div>
+            </div>
+        </div>`;
+
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+        // Fill in the email on the modal
         const client = window.getClient();
+        if (client) {
+            client.auth.getSession().then(({ data: { session } }) => {
+                const el = document.querySelector('#logout-user-email span');
+                if (el) el.innerText = session?.user?.email || 'Authenticated user';
+            });
+        }
+
+        // Allow Escape key to close
+        const escHandler = (e) => {
+            if (e.key === 'Escape') {
+                closeLogoutModal();
+                document.removeEventListener('keydown', escHandler);
+            }
+        };
+        document.addEventListener('keydown', escHandler);
+    };
+
+    window.closeLogoutModal = function () {
+        const modal = document.getElementById('modal-logout-confirm');
+        if (modal) modal.remove();
+    };
+
+    window.confirmLogout = async function () {
+        const client = window.getClient();
+
+        // Disable the button during processing
+        const btn = document.getElementById('logout-confirm-btn');
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = 'Signing out...';
+        }
 
         if (client) {
             try {
@@ -141,7 +219,7 @@
                     await client.rpc('log_auth_event', {
                         p_action:     'LOGOUT',
                         p_email:      session.user.email,
-                        p_user_agent: navigator.userAgent
+                        p_user_agent: navigator.userAgent + ' — Signed out'
                     });
                 }
             } catch (_) { /* ignore */ }
@@ -150,6 +228,13 @@
         }
 
         window.location.href = '../index.html';
+    };
+
+    // ------------------------------------------------------------
+    // handleLogout — opens the modal instead of signing out directly
+    // ------------------------------------------------------------
+    window.handleLogout = function () {
+        window.openLogoutModal();
     };
 
     // ------------------------------------------------------------
