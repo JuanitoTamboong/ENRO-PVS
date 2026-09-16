@@ -503,11 +503,103 @@ main { animation: page-enter 0.28s ease-out both; }
 .ledger-row-negative { color: #dc2626; font-weight: 600; }
 .ledger-row-balance  { color: #15803d; font-weight: 700; }
 
-/* Warning Banner */
+/* ============================================================
+   LOW VOLUME ALERT BANNER — Flat card, no side border
+   ============================================================ */
 .warning-banner {
-    background: #fffbeb; border: 1px solid #fcd34d;
-    border-left: 4px solid #f59e0b; border-radius: 10px;
-    padding: 1rem 1.25rem; display: flex; align-items: flex-start; gap: 0.875rem;
+    position: relative;
+    background: #fffbeb;
+    border: 1.5px solid #fde68a;
+    border-radius: 16px;
+    padding: 1.15rem 1.35rem;
+    box-shadow: 0 1px 2px rgba(245, 158, 11, 0.06);
+    overflow: hidden;
+    animation: warningBannerIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.warning-banner.hidden {
+    display: none !important;
+}
+
+.warning-banner-inner {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.warning-banner-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    color: #d97706;
+    background: #ffffff;
+    border-radius: 10px;
+    font-size: 1rem;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px -1px rgba(245, 158, 11, 0.15);
+}
+
+.warning-banner-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.warning-banner-title {
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: #92400e;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    line-height: 1.2;
+    margin: 0 0 0.2rem 0;
+}
+
+.warning-banner-text {
+    font-size: 0.75rem;
+    color: #78350f;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.warning-banner-text strong {
+    color: #92400e;
+    font-weight: 800;
+    background: rgba(245, 158, 11, 0.16);
+    padding: 0.05rem 0.35rem;
+    border-radius: 4px;
+}
+
+@keyframes warningBannerIn {
+    from {
+        opacity: 0;
+        transform: translateY(-6px) scale(0.99);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@media (max-width: 640px) {
+    .warning-banner {
+        padding: 1rem 1.1rem;
+    }
+
+    .warning-banner-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 0.9rem;
+    }
+
+    .warning-banner-title {
+        font-size: 0.68rem;
+    }
+
+    .warning-banner-text {
+        font-size: 0.72rem;
+    }
 }
 
 /* Empty States */
@@ -835,7 +927,6 @@ main { animation: page-enter 0.28s ease-out both; }
    ACTION BUTTONS — Edit + Delete
    ============================================================ */
 
-/* --- Edit button (blue pencil) --- */
 .directory-table .edit-btn {
     display: inline-flex;
     align-items: center;
@@ -867,7 +958,6 @@ main { animation: page-enter 0.28s ease-out both; }
     box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.2);
 }
 
-/* --- Delete button (red trash) --- */
 .directory-table .delete-btn {
     display: inline-flex;
     align-items: center;
@@ -1263,28 +1353,21 @@ main { animation: page-enter 0.28s ease-out both; }
 .annual-ledger-table th:nth-child(8),
 .annual-ledger-table td:nth-child(8) { width: 12%; text-align: right; }
 
-.warning-banner.hidden {
-    display: none !important;
-}
-
 /* ============================================================
    MOBILE FIX — Annual Volume tables (scroll properly)
    ============================================================ */
 @media (max-width: 640px) {
-    /* Make sure the scroll wrapper works */
     .directory-scroll {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
     }
 
-    /* Force the annual list table to be wide enough to scroll */
     .annual-list-table {
         min-width: 900px !important;
         table-layout: auto !important;
         width: max-content !important;
     }
 
-    /* Reset the percentage widths so columns size naturally */
     .annual-list-table th:nth-child(1),
     .annual-list-table td:nth-child(1) {
         width: auto !important;
@@ -1322,7 +1405,6 @@ main { animation: page-enter 0.28s ease-out both; }
         text-align: center !important;
     }
 
-    /* Compact padding for mobile */
     .annual-list-table thead th,
     .annual-list-table tbody td {
         padding: 0.6rem 0.55rem !important;
@@ -1333,7 +1415,6 @@ main { animation: page-enter 0.28s ease-out both; }
         font-size: 0.58rem !important;
     }
 
-    /* Same fix for the DR ledger table */
     .annual-ledger-table {
         min-width: 950px !important;
         table-layout: auto !important;
@@ -1357,7 +1438,6 @@ main { animation: page-enter 0.28s ease-out both; }
     .annual-ledger-table th:nth-child(8),
     .annual-ledger-table td:nth-child(8) { min-width: 110px !important; text-align: right !important; }
 
-    /* Sticky first column narrower on mobile */
     #annual-list-tbody td:first-child {
         min-width: 170px !important;
         max-width: 170px !important;

@@ -113,15 +113,19 @@
                 </div>
             </div>
 
+            <!-- ============ LOW VOLUME ALERT BANNER — Flat card, no side border ============ -->
             <div id="warning-low-volume-banner" class="warning-banner hidden">
-                <div class="w-8 h-8 bg-amber-500 rounded-lg flex items-center justify-center text-white shrink-0">
-                    <i class="fa-solid fa-triangle-exclamation text-sm"></i>
-                </div>
-                <div class="flex-1">
-                    <h4 class="font-bold text-xs text-amber-900 uppercase tracking-wide">Low Volume Alert</h4>
-                    <p class="text-xs text-amber-800 mt-0.5">
-                        Remaining volume is at or below <strong>100 cu.m</strong>. Additional extraction should be monitored or restricted until permit renewal.
-                    </p>
+                <div class="warning-banner-inner">
+                    <div class="warning-banner-icon">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <div class="warning-banner-content">
+                        <h4 class="warning-banner-title">Low Volume Alert</h4>
+                        <p class="warning-banner-text">
+                            Remaining volume is at or below <strong>100 cu.m</strong>.
+                            Monitor or restrict extraction until permit renewal.
+                        </p>
+                    </div>
                 </div>
             </div>
 
@@ -137,7 +141,7 @@
                     </button>
                 </div>
 
-                <div class="directory-scroll">
+                <div class="directory-scroll" id="annual-ledger-scroll">
                     <table class="directory-table annual-ledger-table">
                         <thead>
                             <tr>
@@ -187,7 +191,6 @@
             </div>
 
             <div class="form-section">
-                <!-- Section header with Fill All button on the right -->
                 <div class="flex items-center justify-between mb-3">
                     <h4 class="form-section-title !mb-0">Transaction Details</h4>
                     <button type="button" onclick="fillRemainingVolume()"
