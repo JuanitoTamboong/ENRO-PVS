@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ENRO • View Ledger</title>
+    <link rel="stylesheet" href="../css/tailwind.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="icon" type="image/png" href="../assets/enro-logo.png">
+</head>
+<body class="h-full bg-ink-50 font-sans text-ink-800">
+
+<!-- Header Mount -->
+<div id="app-header"></div>
+
+<main class="w-full px-4 sm:px-6 lg:px-8 py-6 max-w-5xl mx-auto">
+
+    <!-- Back Button -->
+    <a href="./directory.html" style="display:inline-flex; align-items:center; gap:0.5rem; padding:0.5rem 0.9rem; font-size:0.72rem; font-weight:700; color:#475569; background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; text-decoration:none; margin-bottom:1rem;">
+        <i class="fa-solid fa-arrow-left" style="font-size:0.65rem;"></i>
+        <span>Back to Directory</span>
+    </a>
+
+    <div class="bg-white border border-ink-200 rounded-xl p-6 shadow-sm">
+
+        <!-- Header info -->
+        <div class="border-b border-ink-100 pb-4 mb-5 flex items-start justify-between gap-4">
+            <div class="min-w-0 flex-1">
+                <h1 id="ledger-title" class="text-xl font-bold text-ink-900">Loading...</h1>
+                <p id="ledger-subtitle" class="text-sm text-ink-500 mt-1">Loading permit details...</p>
+            </div>
+
+            <!-- Edit / Save / Cancel buttons — inline styles for guaranteed visibility -->
+            <div id="ledger-actions" style="display:flex; align-items:center; gap:0.5rem; flex-shrink:0;">
+
+                <button id="btn-edit" type="button"
+                        style="display:none; align-items:center; gap:0.5rem; padding:0.5rem 0.9rem; font-size:0.75rem; font-weight:700; color:#15803d; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; cursor:pointer;">
+                    <i class="fa-solid fa-pen" style="font-size:0.65rem;"></i>
+                    <span>Edit</span>
+                </button>
+
+                <button id="btn-cancel" type="button"
+                        style="display:none; align-items:center; gap:0.5rem; padding:0.5rem 0.9rem; font-size:0.75rem; font-weight:700; color:#475569; background:#ffffff; border:1px solid #cbd5e1; border-radius:8px; cursor:pointer;">
+                    <i class="fa-solid fa-xmark" style="font-size:0.65rem;"></i>
+                    <span>Cancel</span>
+                </button>
+
+                <button id="btn-save" type="button"
+                        style="display:none; align-items:center; gap:0.5rem; padding:0.5rem 0.9rem; font-size:0.75rem; font-weight:700; color:#ffffff; background:#15803d; border:1px solid #15803d; border-radius:8px; cursor:pointer;">
+                    <i class="fa-solid fa-check" style="font-size:0.65rem;"></i>
+                    <span>Save Changes</span>
+                </button>
+
+            </div>
+        </div>
+
+        <!-- Section title -->
+        <h3 id="ledger-section-title" class="text-xs font-bold text-enro-800 uppercase tracking-wider mb-4 border-b border-enro-100 pb-1 inline-block">
+            Documentary Requirements
+        </h3>
+
+        <!-- Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+
+            <!-- ECC No. -->
+            <div class="bg-ink-50 p-3 rounded-lg border border-ink-100">
+                <label class="block text-[10px] font-bold text-ink-400 uppercase tracking-wider mb-1">ECC No.</label>
+                <span id="view-ecc-no" data-field="permit_no"
+                      class="font-mono text-sm font-semibold text-ink-800 block min-h-[1.5rem]">—</span>
+            </div>
+
+            <!-- Issued Date -->
+            <div class="bg-ink-50 p-3 rounded-lg border border-ink-100">
+                <label class="block text-[10px] font-bold text-ink-400 uppercase tracking-wider mb-1">Issued Date</label>
+                <span id="view-issued-date" data-field="issued_date"
+                      class="text-sm font-semibold text-ink-800 block min-h-[1.5rem]">—</span>
+            </div>
+
+            <!-- ECC Amendment -->
+            <div class="bg-ink-50 p-3 rounded-lg border border-ink-100 md:col-span-2">
+                <label class="block text-[10px] font-bold text-ink-400 uppercase tracking-wider mb-1">ECC Amendment</label>
+                <span id="view-amendment" data-field="ecc_amendment"
+                      class="text-sm font-semibold text-ink-800 block min-h-[1.5rem]">—</span>
+            </div>
+
+            <!-- Remarks -->
+            <div class="bg-ink-50 p-3 rounded-lg border border-ink-100 md:col-span-2">
+                <label class="block text-[10px] font-bold text-ink-400 uppercase tracking-wider mb-1">Remarks</label>
+                <span id="view-remarks" data-field="remarks"
+                      class="text-sm font-semibold text-ink-800 block min-h-[1.5rem]">—</span>
+            </div>
+
+            <!-- Issued Date 2 -->
+            <div class="bg-ink-50 p-3 rounded-lg border border-ink-100">
+                <label class="block text-[10px] font-bold text-ink-400 uppercase tracking-wider mb-1">Issued Date 2</label>
+                <span id="view-issued-date-2" data-field="issued_date_2"
+                      class="text-sm font-semibold text-ink-800 block min-h-[1.5rem]">—</span>
+            </div>
+
+            <!-- Area Status Clearance -->
+            <div class="bg-ink-50 p-3 rounded-lg border border-ink-100">
+                <label class="block text-[10px] font-bold text-ink-400 uppercase tracking-wider mb-1">Area Status Clearance</label>
+                <span id="view-area-status" data-field="area_status_clearance"
+                      class="text-sm font-semibold text-enro-700 block min-h-[1.5rem]">—</span>
+            </div>
+
+            <!-- Issued Date 3 -->
+            <div class="bg-ink-50 p-3 rounded-lg border border-ink-100">
+                <label class="block text-[10px] font-bold text-ink-400 uppercase tracking-wider mb-1">Issued Date 3</label>
+                <span id="view-issued-date-3" data-field="issued_date_3"
+                      class="text-sm font-semibold text-ink-800 block min-h-[1.5rem]">—</span>
+            </div>
+
+        </div>
+    </div>
+</main>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../supabase/supabase-client.js"></script>
+<script src="../supabase/utils.js"></script>
+<script src="../js/header.js"></script>
+<script src="../js/view-ledger.js"></script>
+</body>
+</html>

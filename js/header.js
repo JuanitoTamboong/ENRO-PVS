@@ -1,4 +1,3 @@
-
 (function () {
     'use strict';
 
@@ -308,12 +307,16 @@
         const roleBadge = roleLabel.slice(0, 2).toUpperCase();
 
         const file = window.location.pathname.split('/').pop();
+        
+        // ★ UPDATED: Added 'view-ledger.html' so the Directory tab stays highlighted
         const active = {
             'dashboard.html':     'hub',
             'directory.html':     'directory',
+            'view-ledger.html':   'directory', 
             'annual-volume.html': 'annual-volume',
             'activity-logs.html': 'activity-logs'
         }[file] || 'hub';
+        
         const cls = (key) => key === active ? 'nav-link active' : 'nav-link';
 
         headerMount.innerHTML = `
