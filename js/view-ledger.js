@@ -1,6 +1,7 @@
 // ============================================================
 // VIEW LEDGER PAGE — View + Inline Edit with Smooth Animations
 // Region/municipality logic is driven entirely by the `regions` table
+// Logs INSERT + UPDATE to activity_logs
 // ============================================================
 (function () {
     'use strict';
@@ -86,13 +87,144 @@
                 border-color: #16a34a !important;
                 box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.12) !important;
             }
+
+            /* ---------- Municipality suggestion modal ---------- */
+            #municipality-suggest-modal {
+                position: fixed;
+                inset: 0;
+                background: rgba(15, 23, 42, 0.55);
+                backdrop-filter: blur(2px);
+                z-index: 9999;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 1rem;
+                animation: munFadeIn 0.22s ease-out both;
+            }
+            #municipality-suggest-modal.closing {
+                animation: munFadeOut 0.2s ease-in both;
+            }
+            #municipality-suggest-modal .mun-card {
+                background: #fff;
+                border-radius: 16px;
+                width: 100%;
+                max-width: 500px;
+                box-shadow: 0 20px 50px -10px rgba(15, 23, 42, 0.35);
+                overflow: hidden;
+                animation: munCardIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+            }
+            @keyframes munFadeIn  { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes munFadeOut { from { opacity: 1; } to { opacity: 0; } }
+            @keyframes munCardIn {
+                0%   { opacity: 0; transform: translateY(24px) scale(0.94); }
+                60%  { opacity: 1; transform: translateY(-3px) scale(1.01); }
+                100% { opacity: 1; transform: translateY(0) scale(1); }
+            }
+            #municipality-suggest-modal .mun-icon {
+                width: 56px;
+                height: 56px;
+                margin: 0 auto 14px;
+                border-radius: 9999px;
+                background: #eff6ff;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                animation: munIconPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both;
+            }
+            @keyframes munIconPop {
+                0%   { opacity: 0; transform: scale(0.5) rotate(-90deg); }
+                60%  { opacity: 1; transform: scale(1.15) rotate(8deg); }
+                100% { opacity: 1; transform: scale(1) rotate(0deg); }
+            }
+            #municipality-suggest-modal .mun-code {
+                background: #f1f5f9;
+                border: 1px solid #e2e8f0;
+                border-radius: 6px;
+                padding: 2px 6px;
+                font-family: 'JetBrains Mono', ui-monospace, monospace;
+                font-size: 10.5px;
+                color: #334155;
+            }
+            #municipality-suggest-modal .mun-option {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 10px;
+                padding: 10px 12px;
+                border: 1px solid #e2e8f0;
+                border-radius: 10px;
+                background: #f8fafc;
+                cursor: pointer;
+                transition: all 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+                text-align: left;
+                width: 100%;
+            }
+            #municipality-suggest-modal .mun-option:hover {
+                background: #ecfdf5;
+                border-color: #86efac;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 10px -4px rgba(22, 163, 74, 0.25);
+            }
+            #municipality-suggest-modal .mun-option:active { transform: scale(0.99); }
+            #municipality-suggest-modal .mun-option .mun-name {
+                font-family: 'JetBrains Mono', ui-monospace, monospace;
+                font-size: 12px;
+                font-weight: 700;
+                color: #0f172a;
+            }
+            #municipality-suggest-modal .mun-option .mun-region {
+                font-size: 10px;
+                color: #64748b;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.03em;
+            }
+            #municipality-suggest-modal .mun-option .mun-badge {
+                font-size: 9px;
+                font-weight: 800;
+                padding: 2px 6px;
+                border-radius: 999px;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+                background: #dcfce7;
+                color: #15803d;
+                border: 1px solid #bbf7d0;
+                white-space: nowrap;
+            }
+            #municipality-suggest-modal .mun-option .mun-badge.is-low {
+                background: #fef3c7;
+                color: #b45309;
+                border-color: #fde68a;
+            }
+            #municipality-suggest-modal .mun-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.4rem;
+                padding: 0.55rem 1.2rem;
+                font-size: 0.75rem;
+                font-weight: 700;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                border: 1px solid transparent;
+            }
+            #municipality-suggest-modal .mun-btn--cancel {
+                color: #475569;
+                background: #fff;
+                border-color: #cbd5e1;
+            }
+            #municipality-suggest-modal .mun-btn--cancel:hover {
+                background: #f8fafc;
+                border-color: #94a3b8;
+                transform: translateY(-1px);
+            }
+            #municipality-suggest-modal .mun-btn:active { transform: scale(0.97); }
         `;
         document.head.appendChild(style);
     }
 
     // ------------------------------------------------------------
     // Inject the Clear button into the actions bar (once)
-    // Attaches onclick directly — doesn't rely on wireButtons()
     // ------------------------------------------------------------
     function ensureClearButton() {
         if (document.getElementById('btn-clear')) return;
@@ -162,6 +294,110 @@
         }
     }
 
+    function escapeHtml(s) {
+        return String(s ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    // ------------------------------------------------------------
+    // ACTIVITY LOGGING
+    // ------------------------------------------------------------
+    async function logActivity({
+        action,
+        entityName = '',
+        details = {}
+    }) {
+        try {
+            const client = getClient();
+            if (!client) return;
+
+            const { data: { user } } = await client.auth.getUser();
+            const performedBy = user?.email || 'system';
+
+            await client.from('activity_logs').insert([{
+                action,
+                entity_type:  'ledger_entries',
+                entity_name:  entityName,
+                performed_by: performedBy,
+                performed_at: new Date().toISOString(),
+                details
+            }]);
+        } catch (err) {
+            console.warn('[Ledger] Activity log skipped:', err);
+        }
+    }
+
+    // ------------------------------------------------------------
+    // Normalize municipality strings for loose comparison
+    // ------------------------------------------------------------
+    function normalizeMunicipality(s) {
+        return String(s ?? '')
+            .toUpperCase()
+            .replace(/[^A-Z0-9 ]+/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    function levenshtein(a, b) {
+        a = normalizeMunicipality(a);
+        b = normalizeMunicipality(b);
+        if (a === b) return 0;
+        if (!a.length) return b.length;
+        if (!b.length) return a.length;
+
+        const prev = new Array(b.length + 1);
+        const curr = new Array(b.length + 1);
+        for (let j = 0; j <= b.length; j++) prev[j] = j;
+
+        for (let i = 1; i <= a.length; i++) {
+            curr[0] = i;
+            for (let j = 1; j <= b.length; j++) {
+                const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+                curr[j] = Math.min(
+                    curr[j - 1] + 1,
+                    prev[j] + 1,
+                    prev[j - 1] + cost
+                );
+            }
+            for (let j = 0; j <= b.length; j++) prev[j] = curr[j];
+        }
+        return prev[b.length];
+    }
+
+    function municipalityDistance(a, b) {
+        const na = normalizeMunicipality(a);
+        const nb = normalizeMunicipality(b);
+        if (!na || !nb) return Infinity;
+        if (na === nb) return 0;
+        if (na.includes(nb) || nb.includes(na)) {
+            return Math.abs(na.length - nb.length) * 0.5;
+        }
+        return levenshtein(na, nb);
+    }
+
+    function findClosestMunicipalities(target, regions, maxDistance = 4, maxResults = 5) {
+        const results = [];
+        for (const r of regions) {
+            for (const m of (r.municipalities || [])) {
+                const d = municipalityDistance(target, m);
+                if (d <= maxDistance) {
+                    results.push({
+                        value: String(m),
+                        region: r.name,
+                        sheet: r.sheet_documentary || `${r.name} DOCUMENTARY REQUIREMENTS`,
+                        distance: d
+                    });
+                }
+            }
+        }
+        results.sort((a, b) => a.distance - b.distance);
+        return results.slice(0, maxResults);
+    }
+
     // ------------------------------------------------------------
     // Fetch regions once (cached)
     // ------------------------------------------------------------
@@ -175,13 +411,11 @@
                 .select('*')
                 .order('sort_order', { ascending: true });
             if (error) {
-                console.error('[Ledger] Failed to load regions:', error);
                 regionsCache = [];
                 return regionsCache;
             }
             regionsCache = data || [];
         } catch (err) {
-            console.error('[Ledger] Exception loading regions:', err);
             regionsCache = [];
         }
         return regionsCache;
@@ -191,18 +425,281 @@
     // Resolve the documentary sheet for a permittee's location
     // ------------------------------------------------------------
     async function resolveSourceSheet(permittee) {
-        const municipality = String(permittee.location || '')
-            .split(' - ')[0].trim().toUpperCase();
+        const rawLocation  = String(permittee.location || '');
+        const municipality = rawLocation.split(' - ')[0].trim().toUpperCase();
+        const normalized   = normalizeMunicipality(municipality);
 
         const regions = await getRegions();
+
+        // Pass 1 — exact normalized match
         for (const r of regions) {
-            const munis = (r.municipalities || [])
-                .map(m => String(m).trim().toUpperCase());
-            if (munis.includes(municipality)) {
+            const munis = (r.municipalities || []).map(normalizeMunicipality);
+            if (munis.includes(normalized)) {
                 return r.sheet_documentary || `${r.name} DOCUMENTARY REQUIREMENTS`;
             }
         }
+
+        // Pass 2 — fuzzy match
+        const best = findClosestMunicipalities(municipality, regions, 4, 1);
+        if (best.length > 0) {
+            return best[0].sheet;
+        }
+
         return null;
+    }
+
+    // ------------------------------------------------------------
+    // MUNICIPALITY SUGGESTION MODAL
+    // ------------------------------------------------------------
+    function showMunicipalitySuggestModal({
+        attempted,
+        permittee,
+        suggestions,
+        allRegions,
+        onPickRegion
+    }) {
+        ensureLedgerAnimations();
+
+        const existing = document.getElementById('municipality-suggest-modal');
+        if (existing) existing.remove();
+
+        const permitteeName = permittee?.name || '—';
+        const permitNo     = permittee?.permit_no || '—';
+        const fullLocation = permittee?.location || '—';
+
+        const hasSuggestions = suggestions && suggestions.length > 0;
+
+        const suggestionList = hasSuggestions
+            ? suggestions.map((s, i) => {
+                const badgeClass = s.distance <= 1 ? 'mun-badge' : 'mun-badge is-low';
+                const badgeText  = s.distance <= 1 ? 'Best match' : `Δ${s.distance}`;
+                return `
+                    <button type="button"
+                            class="mun-option"
+                            data-pick="${escapeHtml(s.value)}"
+                            data-region-id="${escapeHtml(s.regionId ?? '')}"
+                            data-sheet="${escapeHtml(s.sheet)}"
+                            data-idx="${i}">
+                        <div>
+                            <div class="mun-name">${escapeHtml(s.value)}</div>
+                            <div class="mun-region">in region · ${escapeHtml(s.region)}</div>
+                        </div>
+                        <span class="${badgeClass}">${escapeHtml(badgeText)}</span>
+                    </button>
+                `;
+            }).join('')
+            : `
+                <div style="padding:10px 12px;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;font-size:11px;color:#991b1b;text-align:left;">
+                    <i class="fa-solid fa-circle-exclamation" style="margin-right:4px;"></i>
+                    No similar municipality found. Choose a region below to add
+                    <strong>${escapeHtml(attempted)}</strong>.
+                </div>
+            `;
+
+        const regionOptions = (allRegions || []).map(r => `
+            <button type="button"
+                    class="mun-option"
+                    data-add-region-id="${escapeHtml(r.id)}"
+                    data-add-region-name="${escapeHtml(r.name)}"
+                    data-add-region-sheet="${escapeHtml(r.sheet_documentary || (r.name + ' DOCUMENTARY REQUIREMENTS'))}">
+                <div>
+                    <div class="mun-name">${escapeHtml(r.name)}</div>
+                    <div class="mun-region">${(r.municipalities || []).length} municipalities</div>
+                </div>
+                <span class="mun-badge is-low">Add here</span>
+            </button>
+        `).join('');
+
+        const modal = document.createElement('div');
+        modal.id = 'municipality-suggest-modal';
+        modal.innerHTML = `
+            <div class="mun-card">
+                <div class="p-6">
+                    <div class="mun-icon">
+                        <i class="fa-solid fa-map-location-dot" style="color:#2563eb;font-size:1.35rem;"></i>
+                    </div>
+
+                    <h3 class="text-base font-bold text-ink-900 text-center">
+                        Municipality Not Recognized
+                    </h3>
+
+                    <p class="text-[12px] text-ink-500 mt-2 leading-relaxed text-center">
+                        The permittee's location
+                        <strong class="text-ink-900">${escapeHtml(attempted)}</strong>
+                        wasn't found in any region. Pick the correct spelling below
+                        and we'll update it — no database editing required.
+                    </p>
+
+                    <div class="mt-4 p-3 bg-ink-50 border border-ink-200 rounded-lg text-left">
+                        <p class="text-[10px] font-bold text-ink-500 uppercase tracking-wider mb-1.5">
+                            Permittee being edited
+                        </p>
+                        <div class="text-[11px] text-ink-700 space-y-0.5">
+                            <div><span class="text-ink-400">Name:</span> <strong>${escapeHtml(permitteeName)}</strong></div>
+                            <div><span class="text-ink-400">Permit No:</span> <span class="font-mono">${escapeHtml(permitNo)}</span></div>
+                            <div><span class="text-ink-400">Location:</span> ${escapeHtml(fullLocation)}</div>
+                        </div>
+                    </div>
+
+                    ${hasSuggestions ? `
+                        <div class="mt-4">
+                            <p class="text-[10px] font-bold text-ink-500 uppercase tracking-wider mb-2 text-left">
+                                <i class="fa-solid fa-lightbulb text-[9px] mr-1" style="color:#16a34a;"></i>
+                                Similar municipalities — click to use
+                            </p>
+                            <div class="space-y-2">${suggestionList}</div>
+                        </div>
+                    ` : `
+                        <div class="mt-4">
+                            ${suggestionList}
+                        </div>
+                    `}
+
+                    <details class="mt-4 text-left">
+                        <summary class="cursor-pointer text-[11px] font-bold text-ink-600 hover:text-ink-900 select-none">
+                            <i class="fa-solid fa-plus text-[9px] mr-1"></i>
+                            Or add "${escapeHtml(attempted)}" as a new municipality
+                        </summary>
+                        <div class="mt-3">
+                            <p class="text-[10px] text-ink-400 mb-2">
+                                Choose which region this municipality belongs to. It will be appended to that region's list.
+                            </p>
+                            <div class="space-y-2">${regionOptions || '<p class="text-[11px] text-ink-400">No regions available.</p>'}</div>
+                        </div>
+                    </details>
+                </div>
+
+                <div class="px-5 py-3 bg-ink-50 border-t border-ink-200 flex items-center justify-end gap-2">
+                    <button type="button" class="mun-btn mun-btn--cancel" data-action="close">
+                        <i class="fa-solid fa-xmark text-[10px]"></i>
+                        <span>Cancel</span>
+                    </button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        const close = () => {
+            modal.classList.add('closing');
+            setTimeout(() => modal.remove(), 200);
+        };
+
+        modal.querySelector('[data-action="close"]')?.addEventListener('click', close);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) close();
+        });
+        document.addEventListener('keydown', function escHandler(e) {
+            if (e.key === 'Escape') {
+                close();
+                document.removeEventListener('keydown', escHandler);
+            }
+        });
+
+        modal.querySelectorAll('[data-pick]').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const picked    = btn.dataset.pick;
+                const regionId  = btn.dataset.regionId;
+                const sheet     = btn.dataset.sheet;
+
+                if (typeof onPickRegion === 'function') {
+                    close();
+                    await onPickRegion({
+                        action: 'rename',
+                        newMunicipality: picked,
+                        regionId,
+                        sheet
+                    });
+                }
+            });
+        });
+
+        modal.querySelectorAll('[data-add-region-id]').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const regionId   = btn.dataset.addRegionId;
+                const regionName = btn.dataset.addRegionName;
+                const sheet      = btn.dataset.addRegionSheet;
+
+                if (typeof onPickRegion === 'function') {
+                    close();
+                    await onPickRegion({
+                        action: 'append',
+                        regionId,
+                        regionName,
+                        sheet,
+                        newMunicipality: attempted
+                    });
+                }
+            });
+        });
+    }
+
+    // ------------------------------------------------------------
+    // Helper: update permittee's location field in Supabase
+    // ------------------------------------------------------------
+    async function updatePermitteeLocation(permitteeId, newMunicipality, oldLocation) {
+        const client = getClient();
+        if (!client) return false;
+
+        const parts = String(oldLocation || '').split(' - ');
+        const rest = parts.slice(1).join(' - ').trim();
+        const newLocation = rest ? `${newMunicipality} - ${rest}` : newMunicipality;
+
+        const { error } = await client
+            .from('permittees')
+            .update({ location: newLocation })
+            .eq('id', permitteeId);
+
+        if (error) {
+            window.showToast?.('Failed to update location: ' + error.message, 'error');
+            return false;
+        }
+
+        currentPermittee.location = newLocation;
+        return true;
+    }
+
+    // ------------------------------------------------------------
+    // Helper: append municipality to region's municipalities array
+    // ------------------------------------------------------------
+    async function appendMunicipalityToRegion(regionId, newMunicipality) {
+        const client = getClient();
+        if (!client) return false;
+
+        const { data: region, error: fetchErr } = await client
+            .from('regions')
+            .select('id, name, municipalities')
+            .eq('id', regionId)
+            .single();
+
+        if (fetchErr || !region) {
+            window.showToast?.('Failed to fetch region: ' + (fetchErr?.message || 'unknown'), 'error');
+            return false;
+        }
+
+        const currentList = Array.isArray(region.municipalities)
+            ? region.municipalities.map(String)
+            : [];
+
+        const exists = currentList.some(
+            m => normalizeMunicipality(m) === normalizeMunicipality(newMunicipality)
+        );
+        if (exists) return true;
+
+        const updatedList = [...currentList, String(newMunicipality).toUpperCase()];
+
+        const { error: updErr } = await client
+            .from('regions')
+            .update({ municipalities: updatedList })
+            .eq('id', regionId);
+
+        if (updErr) {
+            window.showToast?.('Failed to save municipality: ' + updErr.message, 'error');
+            return false;
+        }
+
+        regionsCache = null;
+        return true;
     }
 
     // ------------------------------------------------------------
@@ -301,12 +798,56 @@
         const sourceSheet = await resolveSourceSheet(currentPermittee);
 
         if (!sourceSheet) {
-            window.showToast?.(
-                `No region configured for "${municipality}". Add this municipality ` +
-                `to the "regions" table in Supabase first.`,
-                'error'
-            );
-            return null;
+            const regions = await getRegions();
+            const suggestions = findClosestMunicipalities(municipality, regions, 5, 5);
+
+            return new Promise((resolve) => {
+                showMunicipalitySuggestModal({
+                    attempted: municipality,
+                    permittee: currentPermittee,
+                    suggestions: suggestions.map(s => {
+                        const match = regions.find(r => r.name === s.region);
+                        return { ...s, regionId: match?.id };
+                    }),
+                    allRegions: regions,
+                    onPickRegion: async (choice) => {
+                        let ok = false;
+
+                        if (choice.action === 'rename') {
+                            ok = await updatePermitteeLocation(
+                                currentPermittee.id,
+                                choice.newMunicipality,
+                                currentPermittee.location
+                            );
+                            if (ok) {
+                                window.showToast?.(
+                                    `Updated location to "${choice.newMunicipality}". Creating ledger...`,
+                                    'success'
+                                );
+                            }
+                        } else if (choice.action === 'append') {
+                            ok = await appendMunicipalityToRegion(
+                                choice.regionId,
+                                choice.newMunicipality
+                            );
+                            if (ok) {
+                                window.showToast?.(
+                                    `Added "${choice.newMunicipality}" to region "${choice.regionName}".`,
+                                    'success'
+                                );
+                            }
+                        }
+
+                        if (!ok) {
+                            resolve(null);
+                            return;
+                        }
+
+                        const retry = await createBlankLedger();
+                        resolve(retry);
+                    }
+                });
+            });
         }
 
         const blank = {
@@ -324,10 +865,25 @@
             .single();
 
         if (error) {
-            console.error('[Ledger] Create failed:', error);
             window.showToast?.('Failed to create ledger: ' + error.message, 'error');
             return null;
         }
+
+        // ✅ Log the ledger creation
+        await logActivity({
+            action: 'INSERT',
+            entityName: currentPermittee?.name || data.permit_holder || '',
+            details: {
+                after: {
+                    permit_no:     data.permit_no,
+                    permit_holder: data.permit_holder,
+                    source_sheet:  data.source_sheet,
+                    municipality:  data.municipality,
+                    location:      data.location
+                },
+                permittee_id: currentPermittee?.id || null
+            }
+        });
 
         window.showToast?.('New ledger entry created. Fill in the details and click Save.', 'success');
         return data;
@@ -379,6 +935,9 @@
             return;
         }
 
+        // Snapshot BEFORE state for logging
+        const beforeSnapshot = currentLedger ? { ...currentLedger } : {};
+
         btnSave.disabled = true;
         btnSave.setAttribute('style', STYLE_SAVING);
         btnSave.innerHTML = HTML_SAVING;
@@ -395,9 +954,34 @@
         btnSave.innerHTML = HTML_SAVE;
 
         if (error) {
-            console.error('[Ledger] Update failed:', error);
             window.showToast?.('Failed to save: ' + error.message, 'error');
             return;
+        }
+
+        // ✅ Build changed-fields diff for activity log
+        const afterSnapshot = data ? { ...data } : {};
+        const changedBefore = {};
+        const changedAfter  = {};
+        Object.keys(updates).forEach(key => {
+            const b = beforeSnapshot[key] ?? null;
+            const a = afterSnapshot[key]  ?? null;
+            if (String(b ?? '') !== String(a ?? '')) {
+                changedBefore[key] = b;
+                changedAfter[key]  = a;
+            }
+        });
+
+        if (Object.keys(changedAfter).length > 0) {
+            await logActivity({
+                action: 'UPDATE',
+                entityName: currentPermittee?.name || data.permit_holder || '',
+                details: {
+                    before: changedBefore,
+                    after:  changedAfter,
+                    permit_no:     data.permit_no,
+                    permittee_id:  currentPermittee?.id || null
+                }
+            });
         }
 
         currentLedger = data;
@@ -577,7 +1161,7 @@
     }
 
     // ------------------------------------------------------------
-    // Wire buttons (except Clear, which wires itself in ensureClearButton)
+    // Wire buttons
     // ------------------------------------------------------------
     function wireButtons() {
         document.getElementById('btn-edit')?.addEventListener('click', async () => {

@@ -208,7 +208,6 @@ function setupRealtimeSubscription() {
     const client = getClient();
     if (!client) return;
 
-    // Clean up any previous channel first
     if (realtimeChannel) {
         client.removeChannel(realtimeChannel);
         realtimeChannel = null;
@@ -223,16 +222,11 @@ function setupRealtimeSubscription() {
                 const newLog = payload.new;
                 if (!newLog) return;
 
-                // Prepend to local array (newest first)
                 allLogs.unshift(newLog);
 
-                // If we're on page 1, flash the new row
                 const wasFirstPage = currentPage === 1;
-
-                // Re-apply filters
                 filterLogs();
 
-                // If user is on page 1, highlight the new row
                 if (wasFirstPage) {
                     requestAnimationFrame(() => highlightNewestRow(newLog.id));
                 }
@@ -263,16 +257,13 @@ function setupRealtimeSubscription() {
                 filterLogs();
             }
         )
-        .subscribe((status) => {
-            console.log('[Activity Logs Realtime] status:', status);
-        });
+        .subscribe(() => { /* silent */ });
 }
 
 function highlightNewestRow(logId) {
     const tbody = document.getElementById('activity-logs-tbody');
     if (!tbody) return;
 
-    // Find the row with data-log-id (we need to add it in renderLogs)
     const row = tbody.querySelector(`tr[data-log-id="${logId}"]`);
     if (!row) return;
 
@@ -280,7 +271,6 @@ function highlightNewestRow(logId) {
     void row.offsetWidth;
     row.classList.add('log-row-new');
 
-    // Remove the class after animation completes
     setTimeout(() => row.classList.remove('log-row-new'), 2000);
 }
 
@@ -297,6 +287,16 @@ function getActionMeta(action) {
         DELETE:       { label: 'Deleted',      css: 'bg-rose-50 text-rose-700 border-rose-200',          icon: 'fa-trash'              }
     }[action] || { label: action || '—', css: 'bg-ink-100 text-ink-600 border-ink-200', icon: 'fa-circle' };
 }
+
+// ------------------------------------------------------------
+// Entity label map
+// ------------------------------------------------------------
+const ENTITY_LABELS = {
+    'auth':           'Authentication',
+    'permittees':     'Permittee',
+    'transactions':   'Transaction',
+    'ledger_entries': 'Ledger'
+};
 
 // ------------------------------------------------------------
 // Render table
@@ -339,12 +339,7 @@ function renderLogs() {
             });
 
         const meta = getActionMeta(log.action);
-
-        const entityLabel = {
-            'auth':         'Authentication',
-            'permittees':   'Permittee',
-            'transactions': 'Transaction'
-        }[log.entity_type] || log.entity_type || '—';
+        const entityLabel = ENTITY_LABELS[log.entity_type] || log.entity_type || '—';
 
         const recordDisplay = log.entity_type === 'auth'
             ? esc(log.performed_by || log.entity_name || '—')
@@ -494,6 +489,9 @@ function openLogDetailsModal(id) {
     add('Entity:',  log.entity_type);
     if (log.entity_name) add('Record:', log.entity_name);
 
+    // ------------------------------------------------------------
+    // AUTH
+    // ------------------------------------------------------------
     if (log.entity_type === 'auth') {
         lines.push('');
         lines.push('─── Authentication ─────────────');
@@ -517,6 +515,9 @@ function openLogDetailsModal(id) {
             add('Browser:', shortUA);
         }
     }
+    // ------------------------------------------------------------
+    // TRANSACTIONS
+    // ------------------------------------------------------------
     else if (log.entity_type === 'transactions') {
         const d = details || {};
         lines.push('');
@@ -533,6 +534,9 @@ function openLogDetailsModal(id) {
         if (d.new_balance  !== undefined) add('New Balance:',  `${d.new_balance} cu.m`);
         if (d.recorded_by)                add('Recorded By:',  d.recorded_by);
     }
+    // ------------------------------------------------------------
+    // PERMITTEES
+    // ------------------------------------------------------------
     else if (log.entity_type === 'permittees') {
         const before = details?.before || {};
         const after  = details?.after  || {};
@@ -592,6 +596,74 @@ function openLogDetailsModal(id) {
             add('Commodity:', before.commodity);
         }
     }
+    // ------------------------------------------------------------
+    // LEDGER ENTRIES
+    // ------------------------------------------------------------
+    else if (log.entity_type === 'ledger_entries') {
+        const before = details?.before || {};
+        const after  = details?.after  || {};
+
+        if (log.action === 'INSERT') {
+            const snap = after && Object.keys(after).length ? after : details || {};
+            lines.push('');
+            lines.push('─── New Ledger Entry ───────────');
+            add('Permittee:',    snap.permit_holder);
+            add('ECC No:',       snap.permit_no);
+            add('Municipality:', snap.municipality);
+            add('Location:',     snap.location);
+            add('Source Sheet:', snap.source_sheet);
+        }
+        else if (log.action === 'UPDATE') {
+            lines.push('');
+            lines.push('─── Changes ────────────────────');
+
+            const fields = [
+                ['permit_no',             'ECC No'],
+                ['issued_date',           'Issued Date'],
+                ['ecc_amendment',         'ECC Amendment'],
+                ['remarks',               'Remarks'],
+                ['issued_date_2',         'Issued Date 2'],
+                ['area_status_clearance', 'Area Status Clearance'],
+                ['issued_date_3',         'Issued Date 3']
+            ];
+
+            let anyChange = false;
+            fields.forEach(([key, label]) => {
+                const hasBefore = Object.prototype.hasOwnProperty.call(before, key);
+                const hasAfter  = Object.prototype.hasOwnProperty.call(after, key);
+
+                // Use whichever snapshot has the key
+                const b = hasBefore ? before[key] : undefined;
+                const a = hasAfter  ? after[key]  : undefined;
+
+                // Only report fields present in the payload
+                if (!hasBefore && !hasAfter) return;
+
+                if (String(b ?? '') !== String(a ?? '')) {
+                    anyChange = true;
+                    lines.push(`${label.padEnd(22)} ${b ?? '—'}  →  ${a ?? '—'}`);
+                }
+            });
+
+            if (!anyChange) lines.push('  (No field values changed)');
+        }
+        else if (log.action === 'DELETE') {
+            lines.push('');
+            lines.push('─── Deleted Ledger Entry ───────');
+            add('Permittee:', before.permit_holder);
+            add('ECC No:',    before.permit_no);
+        }
+        else {
+            // Fallback for any other action
+            if (details && Object.keys(details).length) {
+                lines.push('');
+                lines.push(JSON.stringify(details, null, 2));
+            }
+        }
+    }
+    // ------------------------------------------------------------
+    // FALLBACK
+    // ------------------------------------------------------------
     else {
         lines.push('');
         lines.push(JSON.stringify(details, null, 2));
