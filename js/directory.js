@@ -267,6 +267,9 @@
             });
     }
 
+    // ------------------------------------------------------------
+    // TABLE RENDER
+    // ------------------------------------------------------------
     function renderDirectoryTable(data) {
         filteredData = data || [];
 
@@ -336,13 +339,16 @@
                                 View Ledger
                             </a>
                             <button type="button"
-                                    onclick="openEditModal('${p.id}')"
+                                    data-action="edit"
+                                    data-id="${p.id}"
                                     title="Edit record"
                                     class="edit-btn">
                                 <i class="fa-solid fa-pen text-[10px]"></i>
                             </button>
                             <button type="button"
-                                    onclick="openDeleteModal('${p.id}', '${safeName}')"
+                                    data-action="delete"
+                                    data-id="${p.id}"
+                                    data-name="${esc(safeName)}"
                                     title="Delete record"
                                     class="delete-btn">
                                 <i class="fa-solid fa-trash text-[10px]"></i>
@@ -386,8 +392,9 @@
     function buildPageButtons(current, total) {
         const pages = [];
         const push = (n) => pages.push(
-            `<button class="pagination-page ${n === current ? 'is-active' : ''}"
-                     onclick="goToPage(${n})">${n}</button>`
+            `<button type="button"
+                     class="pagination-page ${n === current ? 'is-active' : ''}"
+                     data-page="${n}">${n}</button>`
         );
         const pushEllipsis = () => pages.push(`<span class="pagination-ellipsis">…</span>`);
 
@@ -444,6 +451,59 @@
         renderDirectoryTable(filtered);
     }
 
+    // ------------------------------------------------------------
+    // PAGINATION DELEGATION (fix)
+    // ------------------------------------------------------------
+    function setupPaginationDelegation() {
+        const pagesEl = document.getElementById('pagination-pages');
+        if (pagesEl && !pagesEl.__wired) {
+            pagesEl.__wired = true;
+            pagesEl.addEventListener('click', (e) => {
+                const btn = e.target.closest('.pagination-page');
+                if (!btn) return;
+                const n = parseInt(btn.dataset.page, 10);
+                if (!Number.isNaN(n)) goToPage(n);
+            });
+        }
+
+        const prevBtn = document.getElementById('pagination-prev');
+        if (prevBtn && !prevBtn.__wired) {
+            prevBtn.__wired = true;
+            prevBtn.addEventListener('click', goToPrevPage);
+        }
+
+        const nextBtn = document.getElementById('pagination-next');
+        if (nextBtn && !nextBtn.__wired) {
+            nextBtn.__wired = true;
+            nextBtn.addEventListener('click', goToNextPage);
+        }
+    }
+
+    // ------------------------------------------------------------
+    // TABLE ACTION DELEGATION (edit / delete buttons)
+    // ------------------------------------------------------------
+    function setupTableActionDelegation() {
+        const tbody = document.getElementById('directory-tbody');
+        if (!tbody || tbody.__wired) return;
+        tbody.__wired = true;
+
+        tbody.addEventListener('click', (e) => {
+            const btn = e.target.closest('button[data-action]');
+            if (!btn) return;
+            const action = btn.dataset.action;
+            const id = btn.dataset.id;
+            if (action === 'edit') {
+                openEditModal(id);
+            } else if (action === 'delete') {
+                const name = btn.dataset.name || 'this record';
+                openDeleteModal(id, name);
+            }
+        });
+    }
+
+    // ------------------------------------------------------------
+    // ADD ENTRY
+    // ------------------------------------------------------------
     function openAddEntryModal() {
         smoothOpenModal('modal-add-entry');
         const form = document.querySelector('#modal-add-entry form');
@@ -498,6 +558,9 @@
         window.showToast('Permittee record added successfully.', 'success');
     }
 
+    // ------------------------------------------------------------
+    // EDIT
+    // ------------------------------------------------------------
     function openEditModal(id) {
         const p = (window.permitteesData || []).find(x => String(x.id) === String(id));
         if (!p) return;
@@ -621,7 +684,6 @@
         const originalHTML = btn ? btn.innerHTML : 'Delete';
         if (btn) { btn.disabled = true; btn.innerHTML = 'Deleting...'; }
 
-        // 1. Fetch permittee details so we can locate its ledger entries
         const { data: permittee, error: fetchErr } = await client
             .from('permittees')
             .select('name, permit_no')
@@ -635,7 +697,6 @@
             return;
         }
 
-        // 2. Delete linked ledger entries by permit_no OR permit_holder
         if (permittee) {
             const conditions = [];
             if (permittee.permit_no) {
@@ -653,12 +714,10 @@
 
                 if (ledgerErr) {
                     console.error('[Directory] ledger delete failed:', ledgerErr);
-                    // Continue anyway — permittee deletion is more important
                 }
             }
         }
 
-        // 3. Delete the permittee
         const { error } = await client.from('permittees').delete().eq('id', deleteTargetId);
 
         if (btn) { btn.disabled = false; btn.innerHTML = originalHTML; }
@@ -676,7 +735,7 @@
     }
 
     // ------------------------------------------------------------
-    // DELETE ALL — removes BOTH permittees and ledger entries
+    // DELETE ALL
     // ------------------------------------------------------------
     function openDeleteAllModal() {
         const countEl = document.getElementById('delete-all-count');
@@ -718,7 +777,6 @@
         const originalHTML = btn ? btn.innerHTML : 'Delete All';
         if (btn) { btn.disabled = true; btn.innerHTML = 'Deleting...'; }
 
-        // 1. Delete ALL ledger entries first
         const { error: ledgerErr } = await client
             .from('ledger_entries')
             .delete()
@@ -731,7 +789,6 @@
             return;
         }
 
-        // 2. Delete ALL permittees
         const { error } = await client
             .from('permittees')
             .delete()
@@ -752,7 +809,7 @@
     }
 
     // ------------------------------------------------------------
-    // Excel Import
+    // EXCEL IMPORT
     // ------------------------------------------------------------
     function triggerExcelImport() {
         const fileInput = document.getElementById('excel-file-input');
@@ -923,7 +980,6 @@
                     return;
                 }
 
-                // --- INSERT PERMITTEES ---
                 if (allPermitteeRows.length > 0) {
                     const byPermitNo = new Map();
                     allPermitteeRows.forEach(r => {
@@ -954,7 +1010,6 @@
                     }
                 }
 
-                // --- INSERT LEDGER ENTRIES (skip orphans) ---
                 if (allLedgerRows.length > 0) {
                     const byKey = new Map();
                     allLedgerRows.forEach(r => {
@@ -963,7 +1018,6 @@
                     });
                     const uniqueLedgerRows = Array.from(byKey.values());
 
-                    // Fetch all permittees to check for matches
                     const { data: allPermittees } = await client
                         .from('permittees')
                         .select('name, permit_no');
@@ -971,7 +1025,6 @@
                     const permitteePermitNos = new Set((allPermittees || []).map(p => p.permit_no).filter(Boolean));
                     const permitteeNames = new Set((allPermittees || []).map(p => (p.name || '').toUpperCase()));
 
-                    // Keep only ledger rows with a matching permittee
                     const orphanFreeRows = uniqueLedgerRows.filter(r =>
                         permitteePermitNos.has(r.permit_no) ||
                         permitteeNames.has((r.permit_holder || '').toUpperCase())
@@ -979,7 +1032,6 @@
 
                     const orphansSkipped = uniqueLedgerRows.length - orphanFreeRows.length;
 
-                    // Deduplicate against existing ledger_entries
                     const permitNos = orphanFreeRows.map(r => r.permit_no).filter(Boolean);
                     const { data: existingLedger } = await client
                         .from('ledger_entries')
@@ -1032,7 +1084,7 @@
     }
 
     // ------------------------------------------------------------
-    // Excel Export — 4 sheets (Tablas + Rom-SIB)
+    // EXCEL EXPORT
     // ------------------------------------------------------------
     async function exportToExcel() {
         if (!window.permitteesData || window.permitteesData.length === 0) {
@@ -1165,7 +1217,8 @@
         const allowedInput = document.getElementById('new-allowed-vol');
         const remainingInput = document.getElementById('new-remaining-vol');
 
-        if (allowedInput && remainingInput) {
+        if (allowedInput && remainingInput && !allowedInput.__wiredVol) {
+            allowedInput.__wiredVol = true;
             allowedInput.addEventListener('input', function () {
                 remainingInput.value = this.value;
                 remainingInput.classList.remove('volume-pulse');
@@ -1175,6 +1228,9 @@
         }
     }
 
+    // ------------------------------------------------------------
+    // GLOBAL EXPORTS (still exposed for safety)
+    // ------------------------------------------------------------
     window.filterDirectoryTable  = filterDirectoryTable;
     window.openAddEntryModal     = openAddEntryModal;
     window.closeAddEntryModal    = closeAddEntryModal;
@@ -1195,6 +1251,9 @@
     window.closeDeleteAllModal   = closeDeleteAllModal;
     window.confirmDeleteAll      = confirmDeleteAll;
 
+    // ------------------------------------------------------------
+    // BOOT
+    // ------------------------------------------------------------
     async function boot() {
         const client = getClient();
         if (!client) {
@@ -1212,6 +1271,8 @@
         renderDirectoryTable(window.permitteesData);
         setupRealtimeSubscription();
         setupVolumeAutoFill();
+        setupPaginationDelegation();   // ← wire pagination once
+        setupTableActionDelegation();  // ← wire edit/delete buttons once
     }
 
     if (document.readyState === 'loading') {
