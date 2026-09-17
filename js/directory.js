@@ -598,6 +598,9 @@
         window.showToast('Permittee record updated successfully.', 'success');
     }
 
+    // ------------------------------------------------------------
+    // DELETE ONE — also removes linked ledger entries
+    // ------------------------------------------------------------
     function openDeleteModal(id, name) {
         deleteTargetId = id;
         const nameEl = document.getElementById('delete-target-name');
@@ -618,6 +621,44 @@
         const originalHTML = btn ? btn.innerHTML : 'Delete';
         if (btn) { btn.disabled = true; btn.innerHTML = 'Deleting...'; }
 
+        // 1. Fetch permittee details so we can locate its ledger entries
+        const { data: permittee, error: fetchErr } = await client
+            .from('permittees')
+            .select('name, permit_no')
+            .eq('id', deleteTargetId)
+            .single();
+
+        if (fetchErr) {
+            console.error('[Directory] fetch for delete failed:', fetchErr);
+            if (btn) { btn.disabled = false; btn.innerHTML = originalHTML; }
+            window.showToast('Failed to fetch record: ' + fetchErr.message, 'error');
+            return;
+        }
+
+        // 2. Delete linked ledger entries by permit_no OR permit_holder
+        if (permittee) {
+            const conditions = [];
+            if (permittee.permit_no) {
+                conditions.push(`permit_no.eq.${permittee.permit_no}`);
+            }
+            if (permittee.name) {
+                conditions.push(`permit_holder.ilike.${permittee.name}`);
+            }
+
+            if (conditions.length > 0) {
+                const { error: ledgerErr } = await client
+                    .from('ledger_entries')
+                    .delete()
+                    .or(conditions.join(','));
+
+                if (ledgerErr) {
+                    console.error('[Directory] ledger delete failed:', ledgerErr);
+                    // Continue anyway — permittee deletion is more important
+                }
+            }
+        }
+
+        // 3. Delete the permittee
         const { error } = await client.from('permittees').delete().eq('id', deleteTargetId);
 
         if (btn) { btn.disabled = false; btn.innerHTML = originalHTML; }
@@ -631,9 +672,12 @@
         closeDeleteModal();
         window.permitteesData = await loadPermitteesFromSupabase();
         filterDirectoryTable();
-        window.showToast('Record deleted successfully.', 'success');
+        window.showToast('Permittee and linked ledger deleted.', 'success');
     }
 
+    // ------------------------------------------------------------
+    // DELETE ALL — removes BOTH permittees and ledger entries
+    // ------------------------------------------------------------
     function openDeleteAllModal() {
         const countEl = document.getElementById('delete-all-count');
         if (countEl) countEl.innerText = (window.permitteesData || []).length;
@@ -674,6 +718,20 @@
         const originalHTML = btn ? btn.innerHTML : 'Delete All';
         if (btn) { btn.disabled = true; btn.innerHTML = 'Deleting...'; }
 
+        // 1. Delete ALL ledger entries first
+        const { error: ledgerErr } = await client
+            .from('ledger_entries')
+            .delete()
+            .neq('id', '00000000-0000-0000-0000-000000000000');
+
+        if (ledgerErr) {
+            console.error('[Directory] delete-all ledger error:', ledgerErr);
+            window.showToast('Failed to delete ledger entries: ' + ledgerErr.message, 'error');
+            if (btn) { btn.disabled = false; btn.innerHTML = originalHTML; }
+            return;
+        }
+
+        // 2. Delete ALL permittees
         const { error } = await client
             .from('permittees')
             .delete()
@@ -683,14 +741,14 @@
 
         if (error) {
             console.error('[Directory] delete-all error:', error);
-            window.showToast('Failed to delete all records: ' + (error.message || error.details), 'error');
+            window.showToast('Failed to delete permittees: ' + (error.message || error.details), 'error');
             return;
         }
 
         closeDeleteAllModal();
         window.permitteesData = await loadPermitteesFromSupabase();
         filterDirectoryTable();
-        window.showToast('All permittee records deleted.', 'success');
+        window.showToast('All permittees and ledger entries deleted.', 'success');
     }
 
     // ------------------------------------------------------------
@@ -726,8 +784,6 @@
                     return '';
                 }
 
-                console.log('[Import] Sheets found:', workbook.SheetNames);
-
                 workbook.SheetNames.forEach(sheetName => {
                     const sheetUpper = sheetName.toUpperCase();
                     const worksheet = workbook.Sheets[sheetName];
@@ -736,8 +792,6 @@
 
                     const isDocumentary = sheetUpper.includes('DOCUMENTARY');
                     const isBasicInfo = sheetUpper.includes('BASIC');
-
-                    console.log(`[Import] Processing "${sheetName}" (${jsonRows.length} rows) — isBasic: ${isBasicInfo}, isDocumentary: ${isDocumentary}`);
 
                     jsonRows.forEach((row) => {
                         if (isBasicInfo) {
@@ -858,8 +912,6 @@
                     });
                 });
 
-                console.log(`[Import] Collected ${allPermitteeRows.length} permittees, ${allLedgerRows.length} ledger rows.`);
-
                 if (allPermitteeRows.length === 0 && allLedgerRows.length === 0) {
                     window.showToast('No valid records found across sheets.', 'error');
                     return;
@@ -871,6 +923,7 @@
                     return;
                 }
 
+                // --- INSERT PERMITTEES ---
                 if (allPermitteeRows.length > 0) {
                     const byPermitNo = new Map();
                     allPermitteeRows.forEach(r => {
@@ -901,6 +954,7 @@
                     }
                 }
 
+                // --- INSERT LEDGER ENTRIES (skip orphans) ---
                 if (allLedgerRows.length > 0) {
                     const byKey = new Map();
                     allLedgerRows.forEach(r => {
@@ -909,9 +963,24 @@
                     });
                     const uniqueLedgerRows = Array.from(byKey.values());
 
-                    console.log(`[Import] Unique ledger rows: ${uniqueLedgerRows.length}`);
+                    // Fetch all permittees to check for matches
+                    const { data: allPermittees } = await client
+                        .from('permittees')
+                        .select('name, permit_no');
 
-                    const permitNos = uniqueLedgerRows.map(r => r.permit_no).filter(Boolean);
+                    const permitteePermitNos = new Set((allPermittees || []).map(p => p.permit_no).filter(Boolean));
+                    const permitteeNames = new Set((allPermittees || []).map(p => (p.name || '').toUpperCase()));
+
+                    // Keep only ledger rows with a matching permittee
+                    const orphanFreeRows = uniqueLedgerRows.filter(r =>
+                        permitteePermitNos.has(r.permit_no) ||
+                        permitteeNames.has((r.permit_holder || '').toUpperCase())
+                    );
+
+                    const orphansSkipped = uniqueLedgerRows.length - orphanFreeRows.length;
+
+                    // Deduplicate against existing ledger_entries
+                    const permitNos = orphanFreeRows.map(r => r.permit_no).filter(Boolean);
                     const { data: existingLedger } = await client
                         .from('ledger_entries')
                         .select('permit_no, permit_holder')
@@ -920,11 +989,9 @@
                     const existingSet = new Set(
                         (existingLedger || []).map(r => `${r.permit_no}||${r.permit_holder || ''}`)
                     );
-                    const newLedgerRows = uniqueLedgerRows.filter(
+                    const newLedgerRows = orphanFreeRows.filter(
                         r => !existingSet.has(`${r.permit_no}||${r.permit_holder || ''}`)
                     );
-
-                    console.log(`[Import] New ledger rows to insert: ${newLedgerRows.length}`);
 
                     if (newLedgerRows.length > 0) {
                         const { error: ledgerInsertErr } = await client
@@ -935,14 +1002,20 @@
                             console.error('[Directory] Ledger insert error:', ledgerInsertErr);
                             window.showToast('Ledger import failed: ' + ledgerInsertErr.message, 'error');
                         } else {
-                            window.showToast(`Imported ${newLedgerRows.length} ledger entry(ies).`, 'success');
+                            const msg = `Imported ${newLedgerRows.length} ledger entry(ies).`;
+                            const skip = orphansSkipped > 0 ? ` Skipped ${orphansSkipped} orphan(s).` : '';
+                            window.showToast(msg + skip, 'success');
                         }
                     } else {
-                        window.showToast('All ledger entries already exist.', 'info');
+                        window.showToast(
+                            orphansSkipped > 0
+                                ? `No new ledger entries. Skipped ${orphansSkipped} orphan(s).`
+                                : 'All ledger entries already exist.',
+                            'info'
+                        );
                     }
                 } else {
-                    console.warn('[Import] No ledger rows collected.');
-                    window.showToast('No documentary/ledger data found in Excel.', 'error');
+                    window.showToast('No documentary/ledger data found in Excel.', 'info');
                 }
 
                 window.permitteesData = await loadPermitteesFromSupabase();
@@ -959,7 +1032,7 @@
     }
 
     // ------------------------------------------------------------
-    // Excel Export — Creates 4 sheets (Tablas + Rom-SIB)
+    // Excel Export — 4 sheets (Tablas + Rom-SIB)
     // ------------------------------------------------------------
     async function exportToExcel() {
         if (!window.permitteesData || window.permitteesData.length === 0) {
@@ -975,7 +1048,6 @@
 
         window.showToast('Preparing export...', 'info');
 
-        // 1. Fetch all ledger entries
         const { data: ledgerData, error: lError } = await client
             .from('ledger_entries')
             .select('*')
@@ -987,7 +1059,6 @@
             return;
         }
 
-        // 2. Classify permittees by municipality (Tablas vs ROM-SIB)
         const TABLAS_MUNICIPALITIES = [
             'ALCANTARA', 'CALATRAVA', 'LOOC', 'ODIONGAN', 'SAN ANDRES',
             'SANTA MARIA', 'FERRON', 'SAN JOSE', 'MAGDIWANG'
@@ -999,7 +1070,6 @@
             return 'ROMSIB';
         }
 
-        // 3. Split permittees by classification
         const permitteesTablas = [];
         const permitteesRomsib = [];
 
@@ -1031,7 +1101,6 @@
             }
         });
 
-        // 4. Split ledger entries by source_sheet
         const ledgerTablas = [];
         const ledgerRomsib = [];
 
@@ -1060,14 +1129,12 @@
             }
         });
 
-        // 5. Build workbook with 4 sheets
         const wb = XLSX.utils.book_new();
 
         function addSheet(rows, name) {
             const ws = XLSX.utils.json_to_sheet(
                 rows.length > 0 ? rows : [{ 'INFO': `No records for ${name}` }]
             );
-            // Auto-size columns
             const cols = Object.keys(ws).filter(k => k[0] !== '!');
             const colWidths = {};
             cols.forEach(cell => {

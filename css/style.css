@@ -1685,3 +1685,94 @@ main { animation: page-enter 0.28s ease-out both; }
     .field-card { padding: 0.85rem 1rem; }
     .field-value { font-size: 0.82rem; }
 }
+
+/* ============================================================
+   LEDGER — Mobile button bar fix
+   Stack title above buttons on small screens
+   ============================================================ */
+
+.ledger-header-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.ledger-header-info {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+#ledger-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+#ledger-actions button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+    .ledger-header-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+    }
+
+    #ledger-actions {
+        width: 100%;
+        justify-content: stretch;
+        gap: 0.4rem;
+    }
+
+    #ledger-actions button {
+        flex: 1 1 0;
+        justify-content: center;
+        padding: 0.6rem 0.4rem;
+        font-size: 0.7rem;
+    }
+
+    #ledger-actions button i {
+        font-size: 0.6rem;
+    }
+
+    #ledger-title {
+        font-size: 1.1rem;
+        word-break: break-word;
+        line-height: 1.2;
+    }
+
+    #ledger-subtitle {
+        font-size: 0.72rem;
+        word-break: break-word;
+    }
+
+    main > div.bg-white {
+        padding: 1rem;
+    }
+
+    .field-card {
+        padding: 0.85rem 1rem;
+    }
+
+    .field-value {
+        font-size: 0.82rem;
+    }
+}
+
+@media (max-width: 400px) {
+    #ledger-actions button i {
+        display: none;
+    }
+
+    #ledger-actions button {
+        font-size: 0.68rem;
+        padding: 0.5rem 0.35rem;
+    }
+}
