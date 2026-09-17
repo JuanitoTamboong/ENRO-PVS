@@ -694,7 +694,7 @@
     }
 
     // ------------------------------------------------------------
-    // Excel Import — FIXED to handle all 4 sheet types
+    // Excel Import
     // ------------------------------------------------------------
     function triggerExcelImport() {
         const fileInput = document.getElementById('excel-file-input');
@@ -714,7 +714,6 @@
                 const allPermitteeRows = [];
                 const allLedgerRows = [];
 
-                // Helper: robust column finder
                 function getVal(row, names) {
                     for (const name of names) {
                         const key = Object.keys(row).find(
@@ -735,16 +734,12 @@
                     const jsonRows = XLSX.utils.sheet_to_json(worksheet);
                     if (jsonRows.length === 0) return;
 
-                    // Determine sheet type by NAME first, then columns
                     const isDocumentary = sheetUpper.includes('DOCUMENTARY');
                     const isBasicInfo = sheetUpper.includes('BASIC');
 
                     console.log(`[Import] Processing "${sheetName}" (${jsonRows.length} rows) — isBasic: ${isBasicInfo}, isDocumentary: ${isDocumentary}`);
 
                     jsonRows.forEach((row) => {
-                        // ============================================
-                        // PATH A: BASIC INFO sheets → permittees
-                        // ============================================
                         if (isBasicInfo) {
                             const name = getVal(row, ['PERMIT HOLDER', 'PERMIT HOLDER NAME']).toUpperCase();
                             if (!name) return;
@@ -782,9 +777,6 @@
                             return;
                         }
 
-                        // ============================================
-                        // PATH B: DOCUMENTARY sheets → ledger_entries
-                        // ============================================
                         if (isDocumentary) {
                             const eccNo = getVal(row, ['ECC NO.', 'ECC NO', 'ECC']);
                             const permitHolder = getVal(row, ['PERMIT HOLDER', 'PERMIT HOLDER NAME']).toUpperCase();
@@ -812,15 +804,11 @@
                             return;
                         }
 
-                        // ============================================
-                        // PATH C: Unknown sheet → detect by columns
-                        // ============================================
                         const columns = Object.keys(row).map(c => c.toUpperCase().trim());
                         const hasPermitHolder = columns.some(c => c.includes('PERMIT HOLDER'));
                         const hasEccNo = columns.some(c => c.includes('ECC NO') || c === 'ECC');
 
                         if (hasPermitHolder && !hasEccNo) {
-                            // Treat as basic info
                             const name = getVal(row, ['PERMIT HOLDER']).toUpperCase();
                             if (name) {
                                 const permitNo = getVal(row, ['PERMIT NO.', 'PERMIT NO', 'PERMIT_NO']);
@@ -843,7 +831,6 @@
                                 });
                             }
                         } else if (hasEccNo) {
-                            // Treat as documentary
                             const eccNo = getVal(row, ['ECC NO.', 'ECC NO', 'ECC']);
                             const permitHolder = getVal(row, ['PERMIT HOLDER']).toUpperCase();
                             const fallbackPermitNo = getVal(row, ['PERMIT NO.', 'PERMIT NO', 'PERMIT_NO']);
@@ -884,7 +871,6 @@
                     return;
                 }
 
-                // --- INSERT PERMITTEES ---
                 if (allPermitteeRows.length > 0) {
                     const byPermitNo = new Map();
                     allPermitteeRows.forEach(r => {
@@ -915,7 +901,6 @@
                     }
                 }
 
-                // --- INSERT LEDGER ENTRIES ---
                 if (allLedgerRows.length > 0) {
                     const byKey = new Map();
                     allLedgerRows.forEach(r => {
@@ -973,32 +958,140 @@
         reader.readAsArrayBuffer(file);
     }
 
-    function exportToExcel() {
+    // ------------------------------------------------------------
+    // Excel Export — Creates 4 sheets (Tablas + Rom-SIB)
+    // ------------------------------------------------------------
+    async function exportToExcel() {
         if (!window.permitteesData || window.permitteesData.length === 0) {
             window.showToast('No data available to export.', 'error');
             return;
         }
 
-        const exportData = window.permitteesData.map(p => ({
-            'LOCATION':                p.location,
-            'PERMIT HOLDER':           p.name,
-            'PERMIT NO.':              p.permitNo,
-            'TYPE OF PERMIT':          p.type,
-            'COMMODITY':               p.commodity,
-            'AREA (has.)':             p.area || p.areaHas || '',
-            'ANNUAL EXTRACTION':       p.rate || p.annualExtraction || '',
-            'ALLOWED VOLUME (CU.M)':   p.allowedVol,
-            'REMAINING VOLUME':        p.remainingVol,
-            'START DATE':              p.startDate,
-            'END DATE':                p.endDate,
-            'STATUS':                  getStatusFor(p).label
-        }));
+        const client = getClient();
+        if (!client) {
+            window.showToast('Database connection failed.', 'error');
+            return;
+        }
 
-        const worksheet = XLSX.utils.json_to_sheet(exportData);
-        const workbook  = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, 'TABLAS BASIC INFO');
-        XLSX.writeFile(workbook, 'Permittees_Directory_Export.xlsx');
-        window.showToast('Directory successfully exported to Excel.', 'success');
+        window.showToast('Preparing export...', 'info');
+
+        // 1. Fetch all ledger entries
+        const { data: ledgerData, error: lError } = await client
+            .from('ledger_entries')
+            .select('*')
+            .order('created_at', { ascending: true });
+
+        if (lError) {
+            console.error('[Export] Ledger fetch failed:', lError);
+            window.showToast('Failed to load ledger data: ' + lError.message, 'error');
+            return;
+        }
+
+        // 2. Classify permittees by municipality (Tablas vs ROM-SIB)
+        const TABLAS_MUNICIPALITIES = [
+            'ALCANTARA', 'CALATRAVA', 'LOOC', 'ODIONGAN', 'SAN ANDRES',
+            'SANTA MARIA', 'FERRON', 'SAN JOSE', 'MAGDIWANG'
+        ];
+
+        function classifyMunicipality(mun) {
+            const m = String(mun || '').trim().toUpperCase();
+            if (TABLAS_MUNICIPALITIES.includes(m)) return 'TABLAS';
+            return 'ROMSIB';
+        }
+
+        // 3. Split permittees by classification
+        const permitteesTablas = [];
+        const permitteesRomsib = [];
+
+        window.permitteesData.forEach(p => {
+            const locParts = (p.location || '').split(' - ');
+            const municipality = (locParts[0] || '').trim();
+            const location = locParts.slice(1).join(' - ').trim();
+
+            const row = {
+                'MUNICIPALITY':            municipality,
+                'LOCATION':                location,
+                'PERMIT HOLDER':           p.name,
+                'PERMIT NO.':              p.permitNo,
+                'TYPE OF PERMIT':          p.type,
+                'COMMODITY':               p.commodity,
+                'AREA (has.)':             p.area || p.areaHas || '',
+                'ANNUAL EXTRACTION':       p.rate || p.annualExtraction || '',
+                'ALLOWED VOLUME (CU.M)':   p.allowedVol,
+                'REMAINING VOLUME':        p.remainingVol,
+                'START DATE':              p.startDate,
+                'END DATE':                p.endDate,
+                'STATUS':                  getStatusFor(p).label
+            };
+
+            if (classifyMunicipality(municipality) === 'TABLAS') {
+                permitteesTablas.push(row);
+            } else {
+                permitteesRomsib.push(row);
+            }
+        });
+
+        // 4. Split ledger entries by source_sheet
+        const ledgerTablas = [];
+        const ledgerRomsib = [];
+
+        (ledgerData || []).forEach(l => {
+            const row = {
+                'MUNICIPALITY':              l.municipality || '',
+                'LOCATION':                  l.location || '',
+                'PERMIT HOLDER':             l.permit_holder || '',
+                'TYPE OF PERMIT':            l.type_of_permit || '',
+                'COMMODITY':                 l.commodity || '',
+                'ECC NO.':                   l.permit_no || '',
+                'ISSUED DATE':               l.issued_date || '',
+                'ECC AMENDMENT':             l.ecc_amendment || '',
+                'REMARKS':                   l.remarks || '',
+                'ISSUED DATE 2':             l.issued_date_2 || '',
+                'ANNUAL EXTRACTION RATE':    l.annual_extraction_rate || '',
+                'AREA STATUS CLEARANCE':     l.area_status_clearance || '',
+                'ISSUED DATE 3':             l.issued_date_3 || ''
+            };
+
+            const src = String(l.source_sheet || '').toUpperCase();
+            if (src.includes('ROM-SIB') || src.includes('ROMSIB')) {
+                ledgerRomsib.push(row);
+            } else {
+                ledgerTablas.push(row);
+            }
+        });
+
+        // 5. Build workbook with 4 sheets
+        const wb = XLSX.utils.book_new();
+
+        function addSheet(rows, name) {
+            const ws = XLSX.utils.json_to_sheet(
+                rows.length > 0 ? rows : [{ 'INFO': `No records for ${name}` }]
+            );
+            // Auto-size columns
+            const cols = Object.keys(ws).filter(k => k[0] !== '!');
+            const colWidths = {};
+            cols.forEach(cell => {
+                const col = cell.replace(/\d+/g, '');
+                const val = String(ws[cell].v || '');
+                colWidths[col] = Math.max(colWidths[col] || 10, val.length + 2);
+            });
+            ws['!cols'] = Object.keys(colWidths).map(c => ({ wch: Math.min(colWidths[c], 40) }));
+            XLSX.utils.book_append_sheet(wb, ws, name.slice(0, 31));
+        }
+
+        addSheet(permitteesTablas, 'TABLAS BASIC INFO');
+        addSheet(ledgerTablas,     'TABLAS DOCUMENTARY REQUIREMENTS');
+        addSheet(permitteesRomsib, 'ROM-SIB BASIC INFO');
+        addSheet(ledgerRomsib,     'ROM-SIB DOCUMENTARY REQUIREMENTS');
+
+        const filename = `Permittees_Directory_${new Date().toISOString().slice(0, 10)}.xlsx`;
+        XLSX.writeFile(wb, filename);
+
+        window.showToast(
+            `Exported ${permitteesTablas.length + permitteesRomsib.length} permittee(s), ` +
+            `${ledgerTablas.length + ledgerRomsib.length} ledger entry(ies) across 4 sheets.`,
+            'success'
+        );
     }
 
     function setupVolumeAutoFill() {
