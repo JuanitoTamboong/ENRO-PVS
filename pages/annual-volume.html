@@ -113,7 +113,6 @@
                 </div>
             </div>
 
-            <!-- ============ LOW VOLUME ALERT BANNER — Flat card, no side border ============ -->
             <div id="warning-low-volume-banner" class="warning-banner hidden">
                 <div class="warning-banner-inner">
                     <div class="warning-banner-icon">
@@ -149,8 +148,8 @@
                                 <th class="text-right">Volume (cu.m)</th>
                                 <th>DR #</th>
                                 <th class="text-right">Amount (₱)</th>
-                                <th>OP #</th>
-                                <th>Truck / Plate</th>
+                                <th>OR #</th>
+                                <th>Truck Load</th>
                                 <th class="text-right">Prev. Balance</th>
                                 <th class="text-right">New Balance</th>
                             </tr>
@@ -163,9 +162,6 @@
     </div>
 </main>
 
-<!-- ============================================================
-     ADD TRANSACTION MODAL
-     ============================================================ -->
 <div id="modal-add-tx" class="modal-overlay">
     <div class="modal-card bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden">
         <div class="px-5 py-4 border-b border-ink-100 flex items-center justify-between shrink-0">
@@ -209,7 +205,7 @@
                         </div>
                         <div>
                             <label class="block text-[11px] font-bold text-ink-600 mb-1">DR # *</label>
-                            <input type="text" id="tx-dr-no" required class="input-field font-mono" placeholder="DR-2026-088">
+                            <input type="text" id="tx-dr-no" required class="input-field font-mono" placeholder="e.g. 0001234">
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-3">
@@ -229,12 +225,12 @@
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-[11px] font-bold text-ink-600 mb-1">OP # *</label>
-                            <input type="text" id="tx-op-no" required class="input-field font-mono" placeholder="OP-9912">
+                            <label class="block text-[11px] font-bold text-ink-600 mb-1">OR # *</label>
+                            <input type="text" id="tx-or-no" required class="input-field font-mono" placeholder="e.g. 1234567">
                         </div>
                         <div>
-                            <label class="block text-[11px] font-bold text-ink-600 mb-1">Truck / Plate *</label>
-                            <input type="text" id="tx-truck-load" required class="input-field" placeholder="2 Trucks / NAK-882">
+                            <label class="block text-[11px] font-bold text-ink-600 mb-1">Truck Load *</label>
+                            <input type="text" id="tx-truck-load" required class="input-field" placeholder="e.g. 2 Trucks / NAK-882">
                         </div>
                     </div>
                 </div>

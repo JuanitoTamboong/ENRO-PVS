@@ -3,21 +3,32 @@
 // ============================================================
 let selectedPermitteeId = null;
 
-// Pagination state for the permittee list
 let annualAllPermittees = [];
 let annualCurrentPage = 1;
 const ANNUAL_PAGE_SIZE = 25;
 
-// ------------------------------------------------------------
-// Config
-// ------------------------------------------------------------
 const LOW_VOLUME_THRESHOLD = 100;
+
+// ------------------------------------------------------------
+// PRICING — Amount (₱) is auto-computed from Volume × Rate
+// ------------------------------------------------------------
+const RATE_PER_CU_M = 25;   // ₱25 per cubic meter — change to your actual rate
+
+function computeAmount(volume) {
+    const v = parseFloat(volume) || 0;
+    return Math.round(v * RATE_PER_CU_M * 100) / 100;
+}
 
 function getClient() {
     return window.supabaseClient ||
            (typeof supabaseClient !== 'undefined' ? supabaseClient : null);
 }
 
+// ------------------------------------------------------------
+// Map DB row to internal shape
+// NOTE: DB column is still "op_no" for backwards compat.
+// We expose it as "orNo" for the UI.
+// ------------------------------------------------------------
 function mapTxRow(t) {
     return {
         id:         t.id,
@@ -25,7 +36,7 @@ function mapTxRow(t) {
         drNo:       t.dr_no,
         volume:     Number(t.volume),
         amount:     Number(t.amount),
-        opNo:       t.op_no,
+        orNo:       t.op_no,
         truckLoad:  t.truck_load,
         prevBal:    Number(t.prev_balance),
         newBal:     Number(t.new_balance),
@@ -35,7 +46,7 @@ function mapTxRow(t) {
 }
 
 // ------------------------------------------------------------
-// AUTO-COMPUTE STATUS from remaining volume
+// AUTO-COMPUTE STATUS
 // ------------------------------------------------------------
 function computeStatus(remaining, allowed) {
     remaining = Number(remaining) || 0;
@@ -175,9 +186,6 @@ function ensureAnnualModalStyles() {
     document.head.appendChild(style);
 }
 
-// ------------------------------------------------------------
-// Generic smooth open/close helpers
-// ------------------------------------------------------------
 function smoothOpenModal(modalId) {
     ensureAnnualModalStyles();
     const modal = document.getElementById(modalId);
@@ -280,7 +288,7 @@ function backToAnnualList() {
 }
 
 // ------------------------------------------------------------
-// Level 1: List (paginated)
+// Level 1: List
 // ------------------------------------------------------------
 function renderAnnualLevel1List(data) {
     annualAllPermittees = data || [];
@@ -441,7 +449,6 @@ async function loadPermitteeLedger(id) {
     document.getElementById('av-allowed').innerText = `${fmt(p.allowedVol)} cu.m`;
     document.getElementById('av-remaining').innerText = `${fmt(p.remainingVol)} cu.m`;
 
-    // Show used volume + percentage instead of redundant rate
     const allowed = Number(p.allowedVol) || 0;
     const remaining = Number(p.remainingVol) || 0;
     const used = allowed - remaining;
@@ -454,7 +461,6 @@ async function loadPermitteeLedger(id) {
         rateEl.innerHTML = `<span class="text-ink-400">No extraction yet</span>`;
     }
 
-    // Auto-compute status from remaining volume
     const s = computeStatus(remaining, allowed);
     document.getElementById('av-status-tag').className = `status-badge ${s.css}`;
     document.getElementById('av-status-tag').innerText = s.label;
@@ -505,7 +511,7 @@ function renderLedgerTable(transactions) {
                 </span>
             </td>
             <td class="text-right text-ink-700 whitespace-nowrap">₱${fmt(tx.amount)}</td>
-            <td><span class="font-mono text-[11px] text-ink-500">${esc(tx.opNo || '—')}</span></td>
+            <td><span class="font-mono text-[11px] text-ink-500">${esc(tx.orNo || '—')}</span></td>
             <td class="text-ink-600 text-xs">${esc(tx.truckLoad || '—')}</td>
             <td class="text-right text-ink-500 whitespace-nowrap">${fmt(tx.prevBal)}</td>
             <td class="text-right ledger-row-balance whitespace-nowrap">${fmt(tx.newBal)}</td>
@@ -514,16 +520,23 @@ function renderLedgerTable(transactions) {
 }
 
 // ------------------------------------------------------------
-// Auto-fill remaining volume (Fill All button)
+// Auto-fill remaining volume
 // ------------------------------------------------------------
 function fillRemainingVolume() {
     const p = (window.permitteesData || []).find(x => String(x.id) === selectedPermitteeId);
     if (!p) return;
 
-    const volInput = document.getElementById('tx-volume');
-    const remaining = Number(p.remainingVol) || 0;
+    const volInput    = document.getElementById('tx-volume');
+    const amountInput = document.getElementById('tx-amount');
+    const remaining   = Number(p.remainingVol) || 0;
 
     volInput.value = remaining.toFixed(2);
+
+    // Auto-fill amount based on the filled volume
+    if (amountInput) {
+        amountInput.value = computeAmount(remaining).toFixed(2);
+    }
+
     volInput.dispatchEvent(new Event('input'));
 
     const drInput = document.getElementById('tx-dr-no');
@@ -537,7 +550,7 @@ function fillRemainingVolume() {
 }
 
 // ------------------------------------------------------------
-// Add Transaction Modal — SMOOTH
+// Add Transaction Modal
 // ------------------------------------------------------------
 function openAddTransactionModal() {
     const p = (window.permitteesData || []).find(x => String(x.id) === selectedPermitteeId);
@@ -549,6 +562,23 @@ function openAddTransactionModal() {
     document.getElementById('tx-modal-error').classList.add('hidden');
 
     smoothOpenModal('modal-add-tx');
+
+    // ---- Auto-compute Amount from Volume (wire ONCE) ----
+    const volInput    = document.getElementById('tx-volume');
+    const amountInput = document.getElementById('tx-amount');
+
+    if (volInput && amountInput && !volInput.__wiredAuto) {
+        volInput.__wiredAuto = true;
+
+        const updateAmount = () => {
+            const vol = parseFloat(volInput.value) || 0;
+            amountInput.value = computeAmount(vol).toFixed(2);
+        };
+
+        volInput.addEventListener('input',  updateAmount);
+        volInput.addEventListener('change', updateAmount);
+    }
+    // ---- end auto-compute wiring ----
 
     const form = document.querySelector('#modal-add-tx form');
     if (form) form.scrollTop = 0;
@@ -595,17 +625,25 @@ async function submitTransactionEntry(e) {
         return;
     }
 
+    const txDate   = document.getElementById('tx-date').value;
+    const txDrNo   = document.getElementById('tx-dr-no').value.trim();
+    const txAmount = parseFloat(document.getElementById('tx-amount').value) || 0;
+    const txOrNo   = document.getElementById('tx-or-no').value.trim();
+    const txTruck  = document.getElementById('tx-truck-load').value.trim();
+
+    const beforeBalance = Number(p.remainingVol) || 0;
+
     const { data: { session } } = await client.auth.getSession();
     const recordedBy = session?.user?.email || 'unknown';
 
     const { data: newBalance, error } = await client.rpc('record_transaction', {
         p_permittee_id: p.id,
-        p_date:         document.getElementById('tx-date').value,
-        p_dr_no:        document.getElementById('tx-dr-no').value.trim(),
+        p_date:         txDate,
+        p_dr_no:        txDrNo,
         p_volume:       volume,
-        p_amount:       parseFloat(document.getElementById('tx-amount').value) || 0,
-        p_op_no:        document.getElementById('tx-op-no').value.trim(),
-        p_truck_load:   document.getElementById('tx-truck-load').value.trim(),
+        p_amount:       txAmount,
+        p_op_no:        txOrNo,
+        p_truck_load:   txTruck,
         p_recorded_by:  recordedBy
     });
 
@@ -613,6 +651,31 @@ async function submitTransactionEntry(e) {
         errEl.innerText = '⚠ ' + (error.message || 'Transaction rejected.');
         errEl.classList.remove('hidden');
         return;
+    }
+
+    try {
+        await client.from('activity_logs').insert([{
+            action:       'INSERT',
+            entity_type:  'transactions',
+            entity_name:  p.name,
+            performed_by: recordedBy,
+            performed_at: new Date().toISOString(),
+            details: {
+                permittee:    p.name,
+                permit_no:    p.permitNo,
+                dr_no:        txDrNo,
+                date:         txDate,
+                volume:       volume,
+                amount:       txAmount,
+                or_no:        txOrNo,
+                truck_load:   txTruck,
+                prev_balance: beforeBalance,
+                new_balance:  Number(newBalance),
+                recorded_by:  recordedBy
+            }
+        }]);
+    } catch (logErr) {
+        console.warn('[Annual] Activity log skipped:', logErr);
     }
 
     await reloadPermitteesFromDb();
