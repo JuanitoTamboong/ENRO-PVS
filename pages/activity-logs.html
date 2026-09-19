@@ -23,6 +23,11 @@
                 <p class="text-xs text-ink-500 mt-0.5">Audit trail of all system changes and sign-in events</p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
+                <button onclick="openBannedIPsModal()" class="btn-secondary text-xs"
+                        style="color:#e11d48;border-color:#fecdd3;">
+                    <i class="fa-solid fa-ban text-xs text-rose-600"></i>
+                    <span>Banned IPs</span>
+                </button>
                 <button onclick="exportLogsToExcel()" class="btn-secondary text-xs">
                     <i class="fa-solid fa-file-arrow-down text-xs text-enro-700"></i>
                     <span>Export CSV</span>
@@ -41,7 +46,7 @@
                 <i class="fa-solid fa-magnifying-glass directory-search-icon"></i>
                 <input type="text" id="log-search-input" oninput="filterLogs()"
                     class="input-field directory-search-input"
-                    placeholder="Search by entity name, user, or action...">
+                    placeholder="Search by entity name, user, action, or IP...">
             </div>
         </div>
 
@@ -75,7 +80,17 @@
         <!-- Logs table -->
         <div class="bg-white border border-ink-200 rounded-xl overflow-hidden">
             <div class="directory-scroll">
-                <table class="directory-table" style="min-width: 1200px;">
+                <table class="directory-table" style="table-layout: fixed; width: 100%; min-width: 1080px;">
+                    <colgroup>
+                        <col style="width: 140px;">
+                        <col style="width: 130px;">
+                        <col style="width: 130px;">
+                        <col style="width: 220px;">
+                        <col style="width: 210px;">
+                        <col style="width: 130px;">
+                        <col style="width: 80px;">
+                        <col style="width: 60px;">
+                    </colgroup>
                     <thead>
                         <tr>
                             <th>When</th>
@@ -83,7 +98,9 @@
                             <th>Entity</th>
                             <th>Record</th>
                             <th>Performed By</th>
+                            <th>IP Address</th>
                             <th class="text-center">Details</th>
+                            <th class="text-center">Ban</th>
                         </tr>
                     </thead>
                     <tbody id="activity-logs-tbody"></tbody>
@@ -128,6 +145,70 @@
         </div>
         <div class="modal-actions">
             <button type="button" onclick="closeLogDetailsModal()" class="modal-btn modal-btn--cancel">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ============ BAN IP MODAL ============ -->
+<div id="modal-ban-ip" class="modal-overlay">
+    <div class="modal-card bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div class="p-5">
+            <div style="width:48px;height:48px;margin:0 auto 12px;border-radius:9999px;background:#fff1f2;display:flex;align-items:center;justify-content:center;">
+                <i class="fa-solid fa-ban" style="color:#f43f5e;font-size:1.1rem;"></i>
+            </div>
+            <h3 class="text-sm font-bold text-ink-900 text-center">Ban this IP address?</h3>
+            <p class="text-[11px] text-ink-500 mt-2 leading-relaxed text-center">
+                You are about to ban IP <strong id="ban-ip-address" class="font-mono text-ink-800">—</strong>.
+                This will prevent them from accessing the system.
+            </p>
+            <div class="mt-4">
+                <label class="block text-[10px] font-bold text-ink-600 uppercase tracking-wider mb-1.5">
+                    Reason (optional)
+                </label>
+                <input type="text" id="ban-ip-reason"
+                       class="w-full px-3 py-2 text-xs border border-ink-300 rounded-lg focus:outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-100"
+                       placeholder="e.g., Suspicious activity, repeated failed logins..."
+                       autocomplete="off">
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button type="button" onclick="closeBanIpModal()" class="modal-btn modal-btn--cancel">
+                Cancel
+            </button>
+            <button type="button" id="ban-ip-confirm-btn"
+                    onclick="confirmBanIp()"
+                    class="modal-btn modal-btn--danger">
+                <i class="fa-solid fa-ban text-[10px] mr-1"></i>
+                Ban IP
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ============ BANNED IPs LIST MODAL ============ -->
+<div id="modal-banned-ips" class="modal-overlay">
+    <div class="modal-card bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden">
+        <div class="px-5 py-4 border-b border-ink-100 flex items-center justify-between shrink-0">
+            <div>
+                <h3 class="text-sm font-bold text-ink-900">Banned IP Addresses</h3>
+                <p class="text-[11px] text-ink-400 mt-0.5">These IPs are blocked from accessing the system</p>
+            </div>
+            <button onclick="closeBannedIPsModal()" class="modal-close-icon w-7 h-7 flex items-center justify-center text-ink-400 hover:text-ink-700 hover:bg-ink-100 rounded-lg transition">
+                <i class="fa-solid fa-xmark text-sm"></i>
+            </button>
+        </div>
+        <div class="p-5 overflow-y-auto flex-1">
+            <div id="banned-ips-list" class="space-y-2">
+                <div class="text-center text-ink-400 text-xs py-8">
+                    <i class="fa-solid fa-spinner fa-spin text-lg mb-2"></i>
+                    <p>Loading banned IPs...</p>
+                </div>
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button type="button" onclick="closeBannedIPsModal()" class="modal-btn modal-btn--cancel">
                 Close
             </button>
         </div>
@@ -180,9 +261,11 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../supabase/supabase-client.js"></script>
-<script src="../supabase/utils.js"></script>
-<script src="../js/activity-logs.js"></script>
-<script src="../js/header.js"></script>
+<script src="../supabase/supabase-client.js?v=12"></script>
+<script src="../supabase/utils.js?v=12"></script>
+<script src="../helper/ip-helper.js?v=12"></script>
+<script src="../js/activity-logs.js?v=12"></script>
+<script src="../js/header.js?v=12"></script>
+<script src="../helper/ban-guard.js?v=12"></script>
 </body>
 </html>

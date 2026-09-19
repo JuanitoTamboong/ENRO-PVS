@@ -1,5 +1,5 @@
 // ============================================================
-// ACTIVITY LOGS PAGE — with realtime subscription
+// ACTIVITY LOGS PAGE — with realtime subscription + IP ban
 // ============================================================
 let allLogs = [];
 let filteredLogs = [];
@@ -22,7 +22,6 @@ function ensureActivityModalStyles() {
     const style = document.createElement('style');
     style.id = 'activity-modal-animations';
     style.innerHTML = `
-        /* --- Overlay fade in / out --- */
         @keyframes actOverlayIn {
             from { opacity: 0; }
             to   { opacity: 1; }
@@ -31,8 +30,6 @@ function ensureActivityModalStyles() {
             from { opacity: 1; }
             to   { opacity: 0; }
         }
-
-        /* --- Card spring pop in / out --- */
         @keyframes actCardIn {
             0%   { opacity: 0; transform: translateY(24px) scale(0.92); }
             60%  { opacity: 1; transform: translateY(-4px) scale(1.02); }
@@ -42,29 +39,21 @@ function ensureActivityModalStyles() {
             0%   { opacity: 1; transform: translateY(0) scale(1); }
             100% { opacity: 0; transform: translateY(16px) scale(0.94); }
         }
-
-        /* --- Icon pop --- */
         @keyframes actIconPop {
             0%   { opacity: 0; transform: scale(0.5) rotate(-90deg); }
             60%  { opacity: 1; transform: scale(1.15) rotate(8deg); }
             100% { opacity: 1; transform: scale(1) rotate(0deg); }
         }
-
-        /* --- Staggered text fade --- */
         @keyframes actTextIn {
             from { opacity: 0; transform: translateY(6px); }
             to   { opacity: 1; transform: translateY(0); }
         }
-
-        /* --- Apply to any activity modal overlay --- */
         .modal-overlay.active {
             animation: actOverlayIn 0.26s ease-out both;
         }
         .modal-overlay.closing {
             animation: actOverlayOut 0.22s ease-in both;
         }
-
-        /* --- Card --- */
         .modal-overlay.active > .modal-card {
             animation: actCardIn 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) both;
             transform-origin: center center;
@@ -72,35 +61,25 @@ function ensureActivityModalStyles() {
         .modal-overlay.closing > .modal-card {
             animation: actCardOut 0.24s ease-in both;
         }
-
-        /* --- Icon inside modal --- */
         .modal-overlay.active [style*="border-radius:9999px"] {
             animation: actIconPop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) 0.08s both;
         }
-
-        /* --- Staggered content --- */
         .modal-overlay.active .p-5,
         .modal-overlay.active .modal-actions {
             animation: actTextIn 0.34s ease-out 0.14s both;
         }
-
-        /* --- Close (X) icon rotate — only the header X button --- */
         .modal-overlay .modal-close-icon {
             transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
         }
         .modal-overlay .modal-close-icon:hover {
             transform: rotate(90deg) scale(1.05);
         }
-
-        /* --- Keep modal action buttons from squishing --- */
         .modal-overlay .btn-secondary,
         .modal-overlay .btn-primary,
         .modal-overlay .modal-btn {
             flex-shrink: 0;
             white-space: nowrap;
         }
-
-        /* --- Input focus glow --- */
         .modal-overlay .input-field {
             transition: border-color 0.2s ease, box-shadow 0.25s ease, background 0.2s ease;
         }
@@ -109,8 +88,6 @@ function ensureActivityModalStyles() {
             box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.08);
             background: #fafffb;
         }
-
-        /* --- Button micro-interactions --- */
         .modal-overlay .btn-primary,
         .modal-overlay .btn-secondary,
         .modal-overlay .modal-btn {
@@ -137,14 +114,29 @@ function ensureActivityModalStyles() {
             70%  { box-shadow: 0 0 0 10px rgba(225, 29, 72, 0); }
             100% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0); }
         }
-
-        /* --- New log row highlight --- */
         @keyframes newLogFlash {
             0%   { background-color: rgba(22, 163, 74, 0.18); }
             100% { background-color: transparent; }
         }
         tr.log-row-new {
             animation: newLogFlash 1.8s ease-out;
+        }
+        .ip-mono {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+        }
+        .ip-banned-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            padding: 1px 6px;
+            border-radius: 9999px;
+            font-size: 9px;
+            font-weight: 700;
+            background: #fff1f2;
+            color: #be123c;
+            border: 1px solid #fecdd3;
+            margin-left: 4px;
         }
     `;
     document.head.appendChild(style);
@@ -199,6 +191,20 @@ async function fetchLogs() {
     }
 
     return data || [];
+}
+
+// ------------------------------------------------------------
+// Check if IP is banned (for display)
+// ------------------------------------------------------------
+async function isIPBanned(ip) {
+    if (!ip || ip === 'unknown' || ip === '::1' || ip === '127.0.0.1') return false;
+    try {
+        if (typeof window.isIpBanned === 'function') {
+            const result = await window.isIpBanned(ip);
+            return result.banned;
+        }
+    } catch (_) { /* ignore */ }
+    return false;
 }
 
 // ------------------------------------------------------------
@@ -310,7 +316,7 @@ function renderLogs() {
 
     if (filteredLogs.length === 0) {
         tbody.innerHTML = `
-            <tr><td colspan="6">
+            <tr><td colspan="8">
                 <div class="empty-state">
                     <i class="fa-solid fa-clipboard-list"></i>
                     No activity logs match your filters.
@@ -345,6 +351,21 @@ function renderLogs() {
             ? esc(log.performed_by || log.entity_name || '—')
             : esc(log.entity_name || '—');
 
+        const ip = log.ip_address || '—';
+        const hasIP = ip && ip !== '—' && ip !== 'unknown' && ip !== '::1' && ip !== '127.0.0.1';
+        const ipDisplay = hasIP
+            ? `<span class="ip-mono text-ink-700">${esc(ip)}</span>`
+            : `<span class="text-ink-300 text-[10px]">—</span>`;
+
+        const banButton = hasIP
+            ? `<button type="button"
+                    onclick="openBanIpModal('${esc(ip)}')"
+                    class="text-[11px] font-bold text-rose-600 hover:text-rose-800 hover:underline"
+                    title="Ban this IP">
+                    <i class="fa-solid fa-ban text-[10px]"></i>
+               </button>`
+            : `<span class="text-ink-200 text-[10px]">—</span>`;
+
         return `
             <tr data-log-id="${log.id}">
                 <td class="text-ink-500 text-[11px] whitespace-nowrap">${esc(whenStr)}</td>
@@ -357,6 +378,7 @@ function renderLogs() {
                 <td class="text-ink-600 text-xs">${esc(entityLabel)}</td>
                 <td class="font-bold text-ink-900 text-xs">${recordDisplay}</td>
                 <td class="text-ink-500 text-[11px]">${esc(log.performed_by || 'system')}</td>
+                <td>${ipDisplay}</td>
                 <td class="text-center">
                     <button type="button"
                             onclick="openLogDetailsModal('${log.id}')"
@@ -364,6 +386,7 @@ function renderLogs() {
                         View
                     </button>
                 </td>
+                <td class="text-center">${banButton}</td>
             </tr>
         `;
     }).join('');
@@ -383,7 +406,8 @@ function filterLogs() {
         const matchesSearch =
             (log.entity_name  || '').toLowerCase().includes(q) ||
             (log.performed_by || '').toLowerCase().includes(q) ||
-            (log.action       || '').toLowerCase().includes(q);
+            (log.action       || '').toLowerCase().includes(q) ||
+            (log.ip_address   || '').toLowerCase().includes(q);
 
         const matchesAction = !action || log.action === action;
         const matchesEntity = !entity || log.entity_type === entity;
@@ -457,7 +481,7 @@ function goToPrevPage() { goToPage(currentPage - 1); }
 function goToNextPage() { goToPage(currentPage + 1); }
 
 // ------------------------------------------------------------
-// Details modal — CLEAN, HUMAN-READABLE OUTPUT — SMOOTH
+// Details modal
 // ------------------------------------------------------------
 function openLogDetailsModal(id) {
     const log = allLogs.find(l => String(l.id) === String(id));
@@ -488,10 +512,8 @@ function openLogDetailsModal(id) {
     }));
     add('Entity:',  log.entity_type);
     if (log.entity_name) add('Record:', log.entity_name);
+    if (log.ip_address)  add('IP Address:', log.ip_address);
 
-    // ------------------------------------------------------------
-    // AUTH
-    // ------------------------------------------------------------
     if (log.entity_type === 'auth') {
         lines.push('');
         lines.push('─── Authentication ─────────────');
@@ -515,9 +537,6 @@ function openLogDetailsModal(id) {
             add('Browser:', shortUA);
         }
     }
-    // ------------------------------------------------------------
-    // TRANSACTIONS
-    // ------------------------------------------------------------
     else if (log.entity_type === 'transactions') {
         const d = details || {};
         lines.push('');
@@ -534,9 +553,6 @@ function openLogDetailsModal(id) {
         if (d.new_balance  !== undefined) add('New Balance:',  `${d.new_balance} cu.m`);
         if (d.recorded_by)                add('Recorded By:',  d.recorded_by);
     }
-    // ------------------------------------------------------------
-    // PERMITTEES
-    // ------------------------------------------------------------
     else if (log.entity_type === 'permittees') {
         const before = details?.before || {};
         const after  = details?.after  || {};
@@ -596,9 +612,6 @@ function openLogDetailsModal(id) {
             add('Commodity:', before.commodity);
         }
     }
-    // ------------------------------------------------------------
-    // LEDGER ENTRIES
-    // ------------------------------------------------------------
     else if (log.entity_type === 'ledger_entries') {
         const before = details?.before || {};
         const after  = details?.after  || {};
@@ -631,14 +644,9 @@ function openLogDetailsModal(id) {
             fields.forEach(([key, label]) => {
                 const hasBefore = Object.prototype.hasOwnProperty.call(before, key);
                 const hasAfter  = Object.prototype.hasOwnProperty.call(after, key);
-
-                // Use whichever snapshot has the key
                 const b = hasBefore ? before[key] : undefined;
                 const a = hasAfter  ? after[key]  : undefined;
-
-                // Only report fields present in the payload
                 if (!hasBefore && !hasAfter) return;
-
                 if (String(b ?? '') !== String(a ?? '')) {
                     anyChange = true;
                     lines.push(`${label.padEnd(22)} ${b ?? '—'}  →  ${a ?? '—'}`);
@@ -654,16 +662,12 @@ function openLogDetailsModal(id) {
             add('ECC No:',    before.permit_no);
         }
         else {
-            // Fallback for any other action
             if (details && Object.keys(details).length) {
                 lines.push('');
                 lines.push(JSON.stringify(details, null, 2));
             }
         }
     }
-    // ------------------------------------------------------------
-    // FALLBACK
-    // ------------------------------------------------------------
     else {
         lines.push('');
         lines.push(JSON.stringify(details, null, 2));
@@ -680,7 +684,148 @@ function closeLogDetailsModal() {
 }
 
 // ------------------------------------------------------------
-// Clear logs — SMOOTH
+// BAN IP MODAL
+// ------------------------------------------------------------
+let pendingBanIP = null;
+
+function openBanIpModal(ip) {
+    if (!ip || ip === '—' || ip === 'unknown') {
+        window.showToast && window.showToast('Invalid IP address.', 'error');
+        return;
+    }
+
+    pendingBanIP = ip;
+    const ipEl = document.getElementById('ban-ip-address');
+    if (ipEl) ipEl.innerText = ip;
+
+    const reasonInput = document.getElementById('ban-ip-reason');
+    if (reasonInput) reasonInput.value = '';
+
+    smoothOpenModal('modal-ban-ip');
+
+    setTimeout(() => {
+        if (reasonInput) reasonInput.focus();
+    }, 350);
+}
+
+function closeBanIpModal() {
+    pendingBanIP = null;
+    smoothCloseModal('modal-ban-ip');
+}
+
+async function confirmBanIp() {
+    if (!pendingBanIP) return;
+
+    const reasonInput = document.getElementById('ban-ip-reason');
+    const reason = reasonInput ? reasonInput.value.trim() : '';
+
+    const btn = document.getElementById('ban-ip-confirm-btn');
+    const originalHTML = btn ? btn.innerHTML : 'Ban IP';
+    if (btn) { btn.disabled = true; btn.innerHTML = 'Banning...'; }
+
+    const ok = await window.banIpAddress(pendingBanIP, reason);
+
+    if (btn) { btn.disabled = false; btn.innerHTML = originalHTML; }
+
+    if (ok) {
+        closeBanIpModal();
+    }
+}
+
+// ------------------------------------------------------------
+// BANNED IPs LIST MODAL
+// ------------------------------------------------------------
+async function openBannedIPsModal() {
+    smoothOpenModal('modal-banned-ips');
+    await renderBannedIPsList();
+}
+
+function closeBannedIPsModal() {
+    smoothCloseModal('modal-banned-ips');
+}
+
+async function renderBannedIPsList() {
+    const container = document.getElementById('banned-ips-list');
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="text-center text-ink-400 text-xs py-8">
+            <i class="fa-solid fa-spinner fa-spin text-lg mb-2"></i>
+            <p>Loading banned IPs...</p>
+        </div>`;
+
+    const banned = await window.fetchBannedIPs();
+
+    if (!banned || banned.length === 0) {
+        container.innerHTML = `
+            <div class="text-center text-ink-400 text-xs py-10">
+                <i class="fa-solid fa-shield-halved text-3xl mb-3 text-ink-300"></i>
+                <p class="font-bold text-ink-500">No banned IPs</p>
+                <p class="text-[10px] mt-1">All IPs are currently allowed to access the system.</p>
+            </div>`;
+        return;
+    }
+
+    const esc = window.escapeHtml || ((s) => s);
+
+    container.innerHTML = banned.map(b => {
+        const bannedAt = b.banned_at
+            ? new Date(b.banned_at).toLocaleString('en-US', {
+                year: 'numeric', month: 'short', day: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+              })
+            : '—';
+
+        return `
+            <div class="flex items-center justify-between gap-3 p-3 bg-rose-50 border border-rose-100 rounded-lg">
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="ip-mono font-bold text-rose-800 text-xs">${esc(b.ip_address)}</span>
+                        <span class="text-[9px] font-bold text-rose-600 bg-white px-1.5 py-0.5 rounded border border-rose-200">
+                            BANNED
+                        </span>
+                    </div>
+                    ${b.reason ? `<p class="text-[10px] text-rose-700 mt-1"><strong>Reason:</strong> ${esc(b.reason)}</p>` : ''}
+                    <p class="text-[10px] text-ink-500 mt-0.5">
+                        Banned by <strong>${esc(b.banned_by || 'system')}</strong> • ${esc(bannedAt)}
+                    </p>
+                </div>
+                <button type="button"
+                        onclick="handleUnbanIP('${esc(b.ip_address)}')"
+                        class="btn-secondary text-[11px] shrink-0"
+                        style="color:#16a34a;border-color:#bbf7d0;">
+                    <i class="fa-solid fa-unlock text-[10px]"></i>
+                    <span>Unban</span>
+                </button>
+            </div>
+        `;
+    }).join('');
+}
+
+async function handleUnbanIP(ip) {
+    if (!confirm(`Unban IP ${ip}?\n\nThey will be able to access the system again.`)) return;
+
+    const ok = await window.unbanIpAddress(ip);
+    if (ok) {
+        // Log the unban action
+        const client = getClient();
+        if (client) {
+            const { data: { session } } = await client.auth.getSession();
+            await window.logActivity({
+                action: 'UPDATE',
+                entity_type: 'auth',
+                entity_name: ip,
+                performed_by: session?.user?.email || 'system',
+                details: { ban: false, note: 'IP unbanned' }
+            });
+        }
+        await renderBannedIPsList();
+        await reload();
+    }
+}
+
+// ------------------------------------------------------------
+// Clear logs
 // ------------------------------------------------------------
 function openClearLogsModal() {
     const countEl = document.getElementById('clear-logs-count');
@@ -759,7 +904,7 @@ function exportLogsToExcel() {
         return;
     }
 
-    const rows = [['When', 'Action', 'Entity', 'Record', 'Performed By', 'Details']];
+    const rows = [['When', 'Action', 'Entity', 'Record', 'Performed By', 'IP Address', 'Details']];
 
     filteredLogs.forEach(log => {
         rows.push([
@@ -768,6 +913,7 @@ function exportLogsToExcel() {
             log.entity_type,
             log.entity_name || '',
             log.performed_by || 'system',
+            log.ip_address || '',
             JSON.stringify(log.details || {})
         ]);
     });
@@ -830,3 +976,9 @@ window.openClearLogsModal      = openClearLogsModal;
 window.closeClearLogsModal     = closeClearLogsModal;
 window.confirmClearLogs        = confirmClearLogs;
 window.exportLogsToExcel       = exportLogsToExcel;
+window.openBanIpModal          = openBanIpModal;
+window.closeBanIpModal         = closeBanIpModal;
+window.confirmBanIp            = confirmBanIp;
+window.openBannedIPsModal      = openBannedIPsModal;
+window.closeBannedIPsModal     = closeBannedIPsModal;
+window.handleUnbanIP           = handleUnbanIP;

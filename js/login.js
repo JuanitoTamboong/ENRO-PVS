@@ -1,9 +1,12 @@
 // ============================================================
 // LOGIN PAGE — Role Selection & Authentication
+// With IP capture + ban check (pre & post auth) + activity logging
 // ============================================================
 let currentLoginRole = 'admin';
 
-// Fallback in case utils.js hasn't loaded
+// ------------------------------------------------------------
+// Fallback showToast
+// ------------------------------------------------------------
 if (typeof window.showToast !== 'function') {
     window.showToast = function (message, type = 'success') {
         const toast = document.getElementById('toast');
@@ -49,29 +52,106 @@ function roleLabel(role) {
     return role || 'no assigned role';
 }
 
-// What the user selected on the login screen (tab)
 function getSelectedRoleLabel() {
     return currentLoginRole === 'admin' ? 'Admin' : 'Admin Staff';
 }
 
-// What the account actually is (per Supabase metadata)
 function getActualRoleLabel(user) {
     const raw = normalizeLoginRole(user?.app_metadata?.role || user?.user_metadata?.role);
     return roleLabel(raw);
 }
 
 // ------------------------------------------------------------
-// Log auth events — sends " — reason" appended to user agent
-// The RPC on Supabase extracts the reason into details.reason
+// LOG AUTH EVENT — WITH IP ADDRESS
+// Signature: logAuthEvent(action, email, reason)
 // ------------------------------------------------------------
-async function logAuthEvent(client, action, email, reason) {
+async function logAuthEvent(action, email, reason) {
     try {
-        await client.rpc('log_auth_event', {
-            p_action:     action,
-            p_email:      email,
-            p_user_agent: navigator.userAgent + (reason ? ` — ${reason}` : '')
+        // Fetch client IP (cached after first call)
+        let ip = 'unknown';
+        if (typeof window.getClientIP === 'function') {
+            ip = await window.getClientIP();
+        }
+
+        // Build a *plain* details object — no client, no user, no session
+        const details = {
+            user_agent: navigator.userAgent
+        };
+        if (reason) details.reason = String(reason);
+
+        // Use the shared logActivity helper (writes ip_address column)
+        if (typeof window.logActivity === 'function') {
+            await window.logActivity({
+                action:       String(action),
+                entity_type:  'auth',
+                entity_name:  String(email || ''),
+                performed_by: String(email || ''),
+                ip_address:   String(ip),
+                details
+            });
+            return;
+        }
+
+        // Fallback: direct insert if ip-helper.js didn't load
+        const client = getSupabase();
+        if (!client) return;
+
+        await client.from('activity_logs').insert([{
+            action:       String(action),
+            entity_type:  'auth',
+            entity_name:  String(email || ''),
+            performed_by: String(email || ''),
+            ip_address:   String(ip),
+            details,
+            performed_at: new Date().toISOString()
+        }]);
+    } catch (err) {
+        console.warn('[logAuthEvent] failed:', err);
+    }
+}
+
+// ------------------------------------------------------------
+// CHECK IF IP IS BANNED
+// ------------------------------------------------------------
+async function checkBannedIP() {
+    try {
+        if (typeof window.isIpBanned !== 'function') return { banned: false };
+
+        let ip = 'unknown';
+        if (typeof window.getClientIP === 'function') {
+            ip = await window.getClientIP();
+        }
+        if (!ip || ip === 'unknown') return { banned: false, ip };
+
+        const result = await window.isIpBanned(ip);
+        return { ...result, ip };
+    } catch (err) {
+        console.warn('[checkBannedIP] failed:', err);
+        return { banned: false };
+    }
+}
+
+// ------------------------------------------------------------
+// Show ban overlay, or fall back to inline error if ban-guard
+// isn't loaded on this page.
+// No redirectTo passed → user stays on the login page.
+// ------------------------------------------------------------
+function showBanOverlayOrFallback(banInfo, fallbackErrorEl) {
+    if (typeof window.__showBanWarning === 'function') {
+        window.__showBanWarning({
+            ip:       banInfo.ip,
+            reason:   banInfo.reason,
+            bannedBy: banInfo.banned_by,
+            bannedAt: banInfo.banned_at
+            // no redirectTo → stays put
         });
-    } catch (_) { /* ignore logging errors */ }
+        return;
+    }
+    // Fallback: plain inline error
+    if (fallbackErrorEl) {
+        fallbackErrorEl.innerText = `Access denied. Your IP (${banInfo.ip || 'unknown'}) has been banned from this system.`;
+        fallbackErrorEl.classList.remove('hidden');
+    }
 }
 
 function selectLoginRole(role) {
@@ -111,6 +191,9 @@ function togglePassword() {
     btn.setAttribute('aria-label', isVisible ? 'Show password' : 'Hide password');
 }
 
+// ------------------------------------------------------------
+// MAIN LOGIN HANDLER
+// ------------------------------------------------------------
 async function handleLogin(e) {
     e.preventDefault();
 
@@ -131,7 +214,7 @@ async function handleLogin(e) {
         return;
     }
 
-    const email = emailInput.value.trim();
+    const email    = emailInput.value.trim();
     const password = passwordInput.value;
 
     if (!email || !password) {
@@ -142,6 +225,24 @@ async function handleLogin(e) {
     }
 
     try {
+        // ============================================================
+        // 1. PRE-CHECK: Is this IP banned BEFORE attempting login?
+        // ============================================================
+        const banCheck = await checkBannedIP();
+        if (banCheck.banned) {
+            await logAuthEvent(
+                'FAILED_LOGIN',
+                email,
+                `Banned IP attempted login (${banCheck.reason || 'no reason given'})`
+            );
+            showBanOverlayOrFallback(banCheck, error);
+            button.disabled = false;
+            return;
+        }
+
+        // ============================================================
+        // 2. ATTEMPT SIGN-IN
+        // ============================================================
         const { error: authError } = await client.auth.signInWithPassword({
             email: email,
             password: password
@@ -149,7 +250,7 @@ async function handleLogin(e) {
 
         // ---- Wrong password / unknown email ----
         if (authError) {
-            await logAuthEvent(client, 'FAILED_LOGIN', email, 'Wrong email or password');
+            await logAuthEvent('FAILED_LOGIN', email, 'Wrong email or password');
             throw authError;
         }
 
@@ -162,7 +263,6 @@ async function handleLogin(e) {
             const actual   = getActualRoleLabel(user);
 
             await logAuthEvent(
-                client,
                 'FAILED_LOGIN',
                 email,
                 `Tried to sign in as ${selected} but this account is ${actual}`
@@ -175,8 +275,27 @@ async function handleLogin(e) {
             );
         }
 
-        // ---- Successful login ----
-        await logAuthEvent(client, 'LOGIN', email, `Signed in as ${getSelectedRoleLabel()}`);
+        // ============================================================
+        // 3. POST-CHECK: Re-verify ban AFTER auth
+        //    Closes the race window between pre-check and login.
+        // ============================================================
+        const postBanCheck = await checkBannedIP();
+        if (postBanCheck.banned) {
+            await logAuthEvent(
+                'LOGIN_BLOCKED',
+                email,
+                `Banned IP blocked after authentication (${postBanCheck.reason || 'no reason given'})`
+            );
+            await client.auth.signOut();
+            showBanOverlayOrFallback(postBanCheck, error);
+            button.disabled = false;
+            return;
+        }
+
+        // ============================================================
+        // 4. EVERYTHING OK → proceed to dashboard
+        // ============================================================
+        await logAuthEvent('LOGIN', email, `Signed in as ${getSelectedRoleLabel()}`);
 
         sessionStorage.setItem('enro_user_role', currentLoginRole);
         showToast(
@@ -211,12 +330,34 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // ----------------------------------------------------------
+    // Auto-redirect if already signed in — BUT check ban first
+    // so a banned user with a stale session can't slip through.
+    // ----------------------------------------------------------
     const client = getSupabase();
     if (client) {
-        client.auth.getSession().then(({ data: { session } }) => {
-            if (session) {
-                window.location.href = './pages/dashboard.html';
+        client.auth.getSession().then(async ({ data: { session } }) => {
+            if (!session) return;
+
+            // Re-verify ban before letting them auto-jump to dashboard
+            const banCheck = await checkBannedIP();
+            if (banCheck.banned) {
+                await client.auth.signOut();
+                await logAuthEvent(
+                    'LOGIN_BLOCKED',
+                    session.user?.email || 'unknown',
+                    `Banned IP blocked on auto-redirect (${banCheck.reason || 'no reason given'})`
+                );
+                showBanOverlayOrFallback(banCheck, document.getElementById('login-error'));
+                return;
             }
+
+            window.location.href = './pages/dashboard.html';
         });
     }
 });
+
+// Expose to window (for inline onclick handlers)
+window.selectLoginRole = selectLoginRole;
+window.togglePassword  = togglePassword;
+window.handleLogin     = handleLogin;
