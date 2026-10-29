@@ -777,10 +777,8 @@
         const originalHTML = btn ? btn.innerHTML : 'Delete All';
         if (btn) { btn.disabled = true; btn.innerHTML = 'Deleting...'; }
 
-        const { error: ledgerErr } = await client
-            .from('ledger_entries')
-            .delete()
-            .neq('id', '00000000-0000-0000-0000-000000000000');
+        // ✅ 1. Delete all ledger entries via RPC (Fixes the 400 Bad Request error)
+        const { error: ledgerErr } = await client.rpc('delete_all_ledger_entries');
 
         if (ledgerErr) {
             console.error('[Directory] delete-all ledger error:', ledgerErr);
@@ -789,10 +787,8 @@
             return;
         }
 
-        const { error } = await client
-            .from('permittees')
-            .delete()
-            .neq('id', '00000000-0000-0000-0000-000000000000');
+        // ✅ 2. Delete all permittees via RPC
+        const { error } = await client.rpc('delete_all_permittees');
 
         if (btn) { btn.disabled = false; btn.innerHTML = originalHTML; }
 

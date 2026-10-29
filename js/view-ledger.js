@@ -1141,10 +1141,13 @@
         if (sectionEl) sectionEl.innerText = sectionTitle;
 
         if (!ledgerData) {
-            const fields = ['permit_no', 'issued_date', 'ecc_amendment', 'remarks', 'issued_date_2', 'area_status_clearance', 'issued_date_3'];
+            const fields = ['issued_date', 'ecc_amendment', 'remarks', 'issued_date_2', 'area_status_clearance', 'issued_date_3'];
             fields.forEach(f => setFieldValue(f, null));
+            
+            // ✅ FIXED: Pre-fill ECC No. with the permittee's actual permit number
             const eccEl = document.getElementById('view-ecc-no');
-            if (eccEl) eccEl.innerText = 'No ledger entry found';
+            if (eccEl) eccEl.innerText = permittee.permit_no || '—';
+            
             setButtonsForViewMode();
             return;
         }

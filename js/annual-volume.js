@@ -12,11 +12,19 @@ const LOW_VOLUME_THRESHOLD = 100;
 // ------------------------------------------------------------
 // PRICING — Amount (₱) is auto-computed from Volume × Rate
 // ------------------------------------------------------------
-const RATE_PER_CU_M = 25;   // ₱25 per cubic meter — change to your actual rate
+const MATERIAL_RATES = {
+    'gravel': 75.00,
+    'sand': 50.00,
+    'rubbles': 90.00,
+    'mixed sand': 50.00,
+    'earthsoil': 50.00
+};
 
-function computeAmount(volume) {
+function computeAmount(volume, materialType) {
     const v = parseFloat(volume) || 0;
-    return Math.round(v * RATE_PER_CU_M * 100) / 100;
+    const type = (materialType || '').toLowerCase().trim();
+    const rate = MATERIAL_RATES[type] || 0;
+    return Math.round(v * rate * 100) / 100;
 }
 
 function getClient() {
@@ -38,6 +46,7 @@ function mapTxRow(t) {
         amount:     Number(t.amount),
         orNo:       t.op_no,
         truckLoad:  t.truck_load,
+        material:   t.material || '—', // Added material mapping
         prevBal:    Number(t.prev_balance),
         newBal:     Number(t.new_balance),
         recordedBy: t.recorded_by,
@@ -293,6 +302,12 @@ function backToAnnualList() {
 function renderAnnualLevel1List(data) {
     annualAllPermittees = data || [];
 
+    // Update the entries count badge
+    const badge = document.getElementById('annual-count-badge');
+    if (badge) {
+        badge.innerText = `${annualAllPermittees.length} ${annualAllPermittees.length === 1 ? 'entry' : 'entries'}`;
+    }
+
     const tbody = document.getElementById('annual-list-tbody');
     if (!tbody) return;
 
@@ -340,13 +355,27 @@ function renderAnnualLevel1List(data) {
 }
 
 function filterAnnualListTable() {
-    const q = (document.getElementById('annual-list-search').value || '').toLowerCase();
+    const searchInput  = document.getElementById('annual-list-search');
+    const statusFilter = document.getElementById('annual-status-filter');
+    
+    const q = searchInput ? searchInput.value.toLowerCase() : '';
+    const selectedStatus = statusFilter ? statusFilter.value : '';
+    
     annualCurrentPage = 1;
+
     renderAnnualLevel1List(
-        (window.permitteesData || []).filter(p =>
-            (p.name     || '').toLowerCase().includes(q) ||
-            (p.permitNo || '').toLowerCase().includes(q)
-        )
+        (window.permitteesData || []).filter(p => {
+            // 1. Check if it matches the search input
+            const matchesSearch = 
+                (p.name     || '').toLowerCase().includes(q) ||
+                (p.permitNo || '').toLowerCase().includes(q);
+            
+            // 2. Check if it matches the selected status
+            const statusInfo = computeStatus(p.remainingVol, p.allowedVol);
+            const matchesStatus = (selectedStatus === '' || statusInfo.label === selectedStatus);
+
+            return matchesSearch && matchesStatus;
+        })
     );
 }
 
@@ -504,7 +533,10 @@ function renderLedgerTable(transactions) {
     tbody.innerHTML = transactions.map(tx => `
         <tr>
             <td class="text-ink-600 whitespace-nowrap">${esc(tx.date)}</td>
-            <td class="text-right ledger-row-negative whitespace-nowrap">-${fmt(tx.volume)}</td>
+            <td class="text-right ledger-row-negative whitespace-nowrap">
+                -${fmt(tx.volume)}
+                <div class="text-[9px] text-ink-400 font-normal normal-case leading-tight">${esc(tx.material)}</div>
+            </td>
             <td>
                 <span class="font-mono text-[11px] font-semibold text-enro-700 bg-enro-50 px-1.5 py-0.5 rounded border border-enro-100">
                     ${esc(tx.drNo)}
@@ -526,15 +558,16 @@ function fillRemainingVolume() {
     const p = (window.permitteesData || []).find(x => String(x.id) === selectedPermitteeId);
     if (!p) return;
 
-    const volInput    = document.getElementById('tx-volume');
-    const amountInput = document.getElementById('tx-amount');
-    const remaining   = Number(p.remainingVol) || 0;
+    const volInput      = document.getElementById('tx-volume');
+    const amountInput   = document.getElementById('tx-amount');
+    const materialInput = document.getElementById('tx-material');
+    const remaining     = Number(p.remainingVol) || 0;
 
     volInput.value = remaining.toFixed(2);
 
-    // Auto-fill amount based on the filled volume
-    if (amountInput) {
-        amountInput.value = computeAmount(remaining).toFixed(2);
+    // Auto-fill amount based on the filled volume AND the selected material
+    if (amountInput && materialInput) {
+        amountInput.value = computeAmount(remaining, materialInput.value).toFixed(2);
     }
 
     volInput.dispatchEvent(new Event('input'));
@@ -563,20 +596,23 @@ function openAddTransactionModal() {
 
     smoothOpenModal('modal-add-tx');
 
-    // ---- Auto-compute Amount from Volume (wire ONCE) ----
-    const volInput    = document.getElementById('tx-volume');
-    const amountInput = document.getElementById('tx-amount');
+    // ---- Auto-compute Amount from Volume & Material (wire ONCE) ----
+    const volInput      = document.getElementById('tx-volume');
+    const amountInput   = document.getElementById('tx-amount');
+    const materialInput = document.getElementById('tx-material');
 
-    if (volInput && amountInput && !volInput.__wiredAuto) {
+    if (volInput && amountInput && materialInput && !volInput.__wiredAuto) {
         volInput.__wiredAuto = true;
 
         const updateAmount = () => {
             const vol = parseFloat(volInput.value) || 0;
-            amountInput.value = computeAmount(vol).toFixed(2);
+            const material = materialInput.value;
+            amountInput.value = computeAmount(vol, material).toFixed(2);
         };
 
         volInput.addEventListener('input',  updateAmount);
         volInput.addEventListener('change', updateAmount);
+        materialInput.addEventListener('change', updateAmount);
     }
     // ---- end auto-compute wiring ----
 
@@ -600,6 +636,8 @@ function closeAddTransactionModal() {
         if (amountInput) amountInput.value = '';
         const volInput = document.getElementById('tx-volume');
         if (volInput) volInput.value = '';
+        const materialInput = document.getElementById('tx-material');
+        if (materialInput) materialInput.value = ''; // Reset dropdown
     });
 }
 
@@ -625,6 +663,13 @@ async function submitTransactionEntry(e) {
         return;
     }
 
+    const txMaterial = document.getElementById('tx-material').value;
+    if (!txMaterial) {
+        errEl.innerText = '⚠ Please select a Material Type.';
+        errEl.classList.remove('hidden');
+        return;
+    }
+
     const txDate   = document.getElementById('tx-date').value;
     const txDrNo   = document.getElementById('tx-dr-no').value.trim();
     const txAmount = parseFloat(document.getElementById('tx-amount').value) || 0;
@@ -644,6 +689,7 @@ async function submitTransactionEntry(e) {
         p_amount:       txAmount,
         p_op_no:        txOrNo,
         p_truck_load:   txTruck,
+        p_material:     txMaterial, // Send to RPC
         p_recorded_by:  recordedBy
     });
 
@@ -669,6 +715,7 @@ async function submitTransactionEntry(e) {
                 amount:       txAmount,
                 or_no:        txOrNo,
                 truck_load:   txTruck,
+                material:     txMaterial, // Log the material
                 prev_balance: beforeBalance,
                 new_balance:  Number(newBalance),
                 recorded_by:  recordedBy
