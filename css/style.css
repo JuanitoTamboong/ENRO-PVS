@@ -10,6 +10,308 @@
 html { background: #f8fafc; }
 
 /* ============================================================
+   DARK THEME
+   ============================================================ */
+
+/* --- Base --- */
+html.dark {
+    background: #0a0f1a;
+}
+
+html.dark body {
+    background: #0a0f1a;
+    color: #cbd5e1;
+}
+
+/* --- Scrollbar --- */
+html.dark ::-webkit-scrollbar-thumb { background: #334155; }
+html.dark ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+/* --- Header --- */
+html.dark header.bg-enro-950 {
+    background: #030712 !important;
+    border-color: #1e293b !important;
+}
+
+/* --- Cards / Panels --- */
+html.dark .bg-white,
+html.dark .metric-card,
+html.dark .bg-ink-50 {
+    background: #111827 !important;
+    border-color: #1f2937 !important;
+    color: #e2e8f0;
+}
+
+html.dark .border-ink-200,
+html.dark .border-ink-100,
+html.dark .border-ink-50 {
+    border-color: #1f2937 !important;
+}
+
+html.dark .divide-ink-50 > * + * {
+    border-color: #1f2937 !important;
+}
+
+/* --- Text --- */
+html.dark .text-ink-900,
+html.dark .text-ink-800,
+html.dark .text-ink-700 {
+    color: #f1f5f9 !important;
+}
+html.dark .text-ink-500,
+html.dark .text-ink-400,
+html.dark .text-ink-300 {
+    color: #94a3b8 !important;
+}
+
+/* --- Hover states --- */
+html.dark .hover\:bg-ink-50\/50:hover,
+html.dark .hover\:bg-ink-50:hover {
+    background: #1e293b !important;
+}
+
+/* --- Inputs --- */
+html.dark .input-field,
+html.dark input,
+html.dark select,
+html.dark textarea {
+    background: #1e293b !important;
+    border-color: #334155 !important;
+    color: #e2e8f0 !important;
+}
+html.dark .input-field::placeholder,
+html.dark input::placeholder {
+    color: #64748b !important;
+}
+html.dark .input-field:focus,
+html.dark input:focus,
+html.dark select:focus {
+    border-color: #16a34a !important;
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.2) !important;
+}
+
+/* --- Tables --- */
+html.dark .data-table th,
+html.dark .directory-table thead th {
+    background: #1e293b !important;
+    color: #cbd5e1 !important;
+    border-color: #334155 !important;
+}
+html.dark .data-table td,
+html.dark .directory-table tbody td {
+    background: #111827 !important;
+    color: #cbd5e1 !important;
+    border-color: #1f2937 !important;
+}
+html.dark .data-table tr:hover td,
+html.dark .directory-table tbody tr:hover td {
+    background: #1e293b !important;
+}
+
+/* --- Sticky first column --- */
+html.dark #annual-list-tbody td:first-child {
+    background: #111827 !important;
+}
+
+/* --- Modals --- */
+html.dark .modal-overlay {
+    background: rgba(0, 0, 0, 0.75);
+}
+html.dark .modal-overlay .bg-white,
+html.dark #modal-logout-confirm .logout-card {
+    background: #111827 !important;
+    color: #e2e8f0;
+}
+html.dark #modal-logout-confirm .logout-title {
+    color: #f1f5f9 !important;
+}
+html.dark #modal-logout-confirm .logout-body,
+html.dark #modal-logout-confirm .logout-email {
+    color: #94a3b8 !important;
+}
+html.dark #modal-logout-confirm .logout-email span {
+    color: #cbd5e1 !important;
+}
+
+/* --- Toast --- */
+html.dark .toast {
+    background: #1e293b;
+    border-color: #334155;
+    color: #e2e8f0;
+}
+html.dark .toast #toast-title { color: #f1f5f9; }
+html.dark .toast #toast-message { color: #94a3b8; }
+
+/* --- Buttons --- */
+html.dark .btn-secondary {
+    background: #1e293b;
+    color: #cbd5e1;
+    border-color: #334155;
+}
+html.dark .btn-secondary:hover {
+    background: #334155;
+    border-color: #475569;
+}
+
+html.dark .pagination-btn {
+    background: #1e293b;
+    color: #cbd5e1;
+    border-color: #334155;
+}
+html.dark .pagination-btn:hover:not(:disabled) {
+    background: #334155;
+    border-color: #475569;
+    color: #f1f5f9;
+}
+html.dark .pagination-page {
+    color: #94a3b8;
+}
+html.dark .pagination-page:hover {
+    background: #334155;
+    color: #f1f5f9;
+}
+
+/* --- Pagination bar --- */
+html.dark .directory-pagination {
+    background: #1e293b !important;
+    border-color: #334155 !important;
+}
+
+/* --- Badges --- */
+html.dark .status-badge.bg-enro-50 {
+    background: rgba(22, 163, 74, 0.15) !important;
+    color: #4ade80 !important;
+    border-color: rgba(22, 163, 74, 0.3) !important;
+}
+html.dark .status-badge.bg-amber-50 {
+    background: rgba(245, 158, 11, 0.15) !important;
+    color: #fbbf24 !important;
+    border-color: rgba(245, 158, 11, 0.3) !important;
+}
+html.dark .status-badge.bg-rose-50 {
+    background: rgba(225, 29, 72, 0.15) !important;
+    color: #fb7185 !important;
+    border-color: rgba(225, 29, 72, 0.3) !important;
+}
+
+/* --- Warning banner --- */
+html.dark .warning-banner {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: rgba(245, 158, 11, 0.3);
+}
+html.dark .warning-banner-icon {
+    background: #1e293b;
+    color: #fbbf24;
+}
+html.dark .warning-banner-title { color: #fbbf24; }
+html.dark .warning-banner-text  { color: #fcd34d; }
+html.dark .warning-banner-text strong {
+    background: rgba(245, 158, 11, 0.25);
+    color: #fbbf24;
+}
+
+/* --- Ledger hero --- */
+html.dark .ledger-hero {
+    background: linear-gradient(135deg, #064e3b 0%, #065f46 60%, #047857 100%);
+}
+
+/* --- Field cards --- */
+html.dark .field-card {
+    background: #111827;
+    border-color: #1f2937;
+}
+html.dark .field-card--featured {
+    background: linear-gradient(135deg, rgba(22, 163, 74, 0.1) 0%, rgba(17, 24, 39, 1) 100%);
+    border-color: rgba(22, 163, 74, 0.3);
+}
+html.dark .field-label { color: #64748b; }
+html.dark .field-value { color: #e2e8f0; }
+html.dark .field-value--mono {
+    background: rgba(22, 163, 74, 0.15);
+    color: #4ade80;
+    border-color: rgba(22, 163, 74, 0.3);
+}
+
+/* --- Back button --- */
+html.dark .back-btn {
+    background: #1e293b;
+    border-color: #334155;
+    color: #cbd5e1;
+}
+html.dark .back-btn:hover {
+    background: rgba(22, 163, 74, 0.15);
+    border-color: rgba(22, 163, 74, 0.4);
+    color: #4ade80;
+}
+
+/* --- Section headers --- */
+html.dark .ledger-section-header::after {
+    background: linear-gradient(to right, #334155, transparent);
+}
+
+/* --- Empty states --- */
+html.dark .empty-state { color: #64748b; }
+
+/* --- Breadcrumbs --- */
+html.dark .breadcrumb { color: #94a3b8; }
+html.dark .breadcrumb a { color: #94a3b8; }
+html.dark .breadcrumb a:hover { color: #4ade80; }
+html.dark .breadcrumb span { color: #f1f5f9; }
+
+/* --- Directory count badge --- */
+html.dark .directory-count-badge {
+    background: #1e293b;
+    border-color: #334155;
+    color: #94a3b8;
+}
+
+/* --- Login page (already dark, just polish) --- */
+html.dark .login-panel {
+    background: #111827;
+}
+html.dark .login-panel-head h2 { color: #f1f5f9; }
+html.dark .login-panel-head p  { color: #94a3b8; }
+html.dark .login-role-toggle {
+    background: #1e293b;
+    border-color: #334155;
+}
+html.dark .login-role-toggle-thumb {
+    background: #334155;
+}
+html.dark .login-role-tab { color: #94a3b8; }
+html.dark .login-role-tab.is-active { color: #4ade80; }
+html.dark .login-input {
+    background: #1e293b;
+    border-color: #334155;
+}
+html.dark .login-input:focus-within {
+    background: #1e293b;
+    border-color: #16a34a;
+}
+html.dark .login-input input { color: #e2e8f0; }
+html.dark .login-field label { color: #94a3b8; }
+html.dark .login-check { color: #94a3b8; }
+html.dark .login-panel-foot {
+    border-color: #1f2937;
+    color: #64748b;
+}
+
+/* --- Theme toggle button --- */
+.theme-toggle-btn {
+    transition: background-color 0.18s ease, color 0.18s ease, transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.theme-toggle-btn:hover { transform: scale(1.08); }
+.theme-toggle-btn:active { transform: scale(0.94); }
+
+/* --- Smooth theme transition --- */
+html.theme-transition,
+html.theme-transition *,
+html.theme-transition *::before,
+html.theme-transition *::after {
+    transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease !important;
+}
+
+/* ============================================================
    LOGIN — Full-viewport, no-scroll design
    ============================================================ */
 
