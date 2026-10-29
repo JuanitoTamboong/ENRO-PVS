@@ -452,30 +452,35 @@
     }
 
     // ------------------------------------------------------------
-    // PAGINATION DELEGATION (fix)
+    // PAGINATION DELEGATION (Fixed)
     // ------------------------------------------------------------
     function setupPaginationDelegation() {
-        const pagesEl = document.getElementById('pagination-pages');
-        if (pagesEl && !pagesEl.__wired) {
-            pagesEl.__wired = true;
-            pagesEl.addEventListener('click', (e) => {
-                const btn = e.target.closest('.pagination-page');
-                if (!btn) return;
-                const n = parseInt(btn.dataset.page, 10);
-                if (!Number.isNaN(n)) goToPage(n);
+        const controls = document.querySelector('.directory-pagination-controls');
+        
+        if (controls && !controls.__wired) {
+            controls.__wired = true;
+            controls.addEventListener('click', (e) => {
+                // Check if they clicked a page number
+                const pageBtn = e.target.closest('.pagination-page');
+                if (pageBtn) {
+                    const n = parseInt(pageBtn.dataset.page, 10);
+                    if (!Number.isNaN(n)) goToPage(n);
+                    return;
+                }
+
+                // Check if they clicked Prev
+                const prevBtn = e.target.closest('#pagination-prev');
+                if (prevBtn && !prevBtn.disabled) {
+                    goToPrevPage();
+                    return;
+                }
+
+                // Check if they clicked Next
+                const nextBtn = e.target.closest('#pagination-next');
+                if (nextBtn && !nextBtn.disabled) {
+                    goToNextPage();
+                }
             });
-        }
-
-        const prevBtn = document.getElementById('pagination-prev');
-        if (prevBtn && !prevBtn.__wired) {
-            prevBtn.__wired = true;
-            prevBtn.addEventListener('click', goToPrevPage);
-        }
-
-        const nextBtn = document.getElementById('pagination-next');
-        if (nextBtn && !nextBtn.__wired) {
-            nextBtn.__wired = true;
-            nextBtn.addEventListener('click', goToNextPage);
         }
     }
 
